@@ -5,12 +5,32 @@ import { cn } from '@/lib/utils';
 import { MagnifyingGlassIcon, UserCircleIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
-// Group configuration for node categories
+// Group configuration for node categories with shortcuts
 const NODE_CATEGORIES = {
   'Compute & Services': ['service', 'gateway'] as ArchitectureNodeType[],
   'Data Store': ['database', 'cache', 'storage'] as ArchitectureNodeType[],
   'Messaging': ['queue'] as ArchitectureNodeType[],
   'External': ['external', 'client'] as ArchitectureNodeType[],
+};
+
+// Keyboard shortcuts for nodes
+const NODE_SHORTCUTS: Record<ArchitectureNodeType, string> = {
+  service: 'S',
+  database: 'D',
+  queue: 'Q',
+  cache: 'C',
+  gateway: 'G',
+  external: 'E',
+  storage: 'T',
+  client: 'L',
+};
+
+// Keyboard shortcuts for groups
+const GROUP_SHORTCUTS: Record<GroupNodeType, string> = {
+  vpc: 'Shift+V',
+  cluster: 'Shift+K',
+  region: 'Shift+R',
+  subnet: 'Shift+N',
 };
 
 // Infrastructure groups
@@ -41,17 +61,17 @@ export function NodePalette() {
   });
 
   return (
-    <aside className="w-64 border-r border-zinc-800 bg-zinc-950 flex flex-col z-20">
+    <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col z-20">
       {/* Search */}
-      <div className="p-4 border-b border-zinc-800">
+      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-zinc-500" />
+          <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
           <input 
             type="text" 
             placeholder="Search components..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 placeholder-zinc-500 rounded-md pl-8 pr-3 py-2 focus:outline-none focus:border-zinc-600 focus:ring-0 transition-colors"
+            className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-300 placeholder-zinc-400 dark:placeholder-zinc-500 rounded-md pl-8 pr-3 py-2 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-0 transition-colors"
           />
         </div>
       </div>
@@ -74,7 +94,7 @@ export function NodePalette() {
         )}
 
         {filteredGroups.length > 0 && Object.keys(filteredCategories).length > 0 && (
-          <div className="h-px bg-zinc-800 w-full" />
+          <div className="h-px bg-zinc-200 dark:bg-zinc-800 w-full" />
         )}
 
         {/* Regular Node Categories */}
@@ -101,14 +121,14 @@ export function NodePalette() {
       </div>
 
       {/* User Profile / Footer */}
-      <div className="p-4 border-t border-zinc-800">
+      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-linear-to-tr from-zinc-700 to-zinc-600 border border-zinc-500 flex items-center justify-center">
-            <UserCircleIcon className="w-5 h-5 text-zinc-400" />
+          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-zinc-300 to-zinc-200 dark:from-zinc-700 dark:to-zinc-600 border border-zinc-300 dark:border-zinc-500 flex items-center justify-center">
+            <UserCircleIcon className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xs font-medium text-zinc-200">User</span>
-            <span className="text-[10px] text-zinc-500">Workspace Owner</span>
+            <span className="text-xs font-medium text-zinc-900 dark:text-zinc-200">User</span>
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">Workspace Owner</span>
           </div>
         </div>
       </div>
@@ -121,15 +141,21 @@ function GroupDraggableNode({ type }: { type: GroupNodeType }) {
   const config = GROUP_TYPES_CONFIG[type];
   const Icon = config.icon;
   const { onDragStart } = useDragEvent(`group-${type}`);
+  const shortcut = GROUP_SHORTCUTS[type];
 
   return (
     <div
       draggable
       onDragStart={onDragStart}
-      className="cursor-grab active:cursor-grabbing bg-zinc-900/30 hover:bg-zinc-900 border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg p-3 flex flex-col items-center gap-2 transition-all"
+      className="cursor-grab active:cursor-grabbing bg-zinc-100/50 dark:bg-zinc-900/30 hover:bg-zinc-200 dark:hover:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-lg p-3 flex flex-col items-center gap-2 transition-all relative group"
     >
-      <Icon className="w-4 h-4 text-zinc-500" />
-      <span className="text-xs font-medium text-zinc-400">
+      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <kbd className="text-[8px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1 py-0.5 rounded">
+          {shortcut}
+        </kbd>
+      </div>
+      <Icon className="w-4 h-4 text-zinc-500 dark:text-zinc-500" />
+      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
         {config.label}
       </span>
     </div>
@@ -140,17 +166,23 @@ function GridDraggableNode({ type }: { type: ArchitectureNodeType }) {
   const config = NODE_TYPES_CONFIG[type];
   const Icon = config.icon;
   const { onDragStart } = useDragEvent(type);
+  const shortcut = NODE_SHORTCUTS[type];
 
   return (
     <div
       draggable
       onDragStart={onDragStart}
-      className="group cursor-grab active:cursor-grabbing bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-lg p-3 flex flex-col items-center gap-2 transition-all"
+      className="group cursor-grab active:cursor-grabbing bg-zinc-100/50 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-lg p-3 flex flex-col items-center gap-2 transition-all relative"
     >
+      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <kbd className="text-[8px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1 py-0.5 rounded">
+          {shortcut}
+        </kbd>
+      </div>
       <div className={cn('p-2 rounded-md', config.bgClass)}>
         <Icon className={cn('w-4.5 h-4.5', config.iconColor, 'group-hover:opacity-90')} strokeWidth={1.5} />
       </div>
-      <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-200">
+      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200">
         {config.label}
       </span>
     </div>
@@ -161,20 +193,24 @@ function ListDraggableNode({ type }: { type: ArchitectureNodeType }) {
   const config = NODE_TYPES_CONFIG[type];
   const Icon = config.icon;
   const { onDragStart } = useDragEvent(type);
+  const shortcut = NODE_SHORTCUTS[type];
 
   return (
     <div
       draggable
       onDragStart={onDragStart}
-      className="cursor-grab active:cursor-grabbing flex items-center gap-3 p-2 rounded-md hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all"
+      className="group cursor-grab active:cursor-grabbing flex items-center gap-3 p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all relative"
     >
       <span className={cn('p-1.5 rounded', config.bgClass)}>
         <Icon className={cn('w-4 h-4', config.iconColor)} />
       </span>
-      <div className="flex flex-col">
-        <span className="text-xs font-medium text-zinc-300">{config.label}</span>
-        <span className="text-[10px] text-zinc-600">{config.description}</span>
+      <div className="flex flex-col flex-1">
+        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{config.label}</span>
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-600">{config.description}</span>
       </div>
+      <kbd className="text-[8px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+        {shortcut}
+      </kbd>
     </div>
   );
 }

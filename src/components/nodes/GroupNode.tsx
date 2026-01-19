@@ -26,28 +26,28 @@ export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
       <div className="pointer-events-auto w-full h-full">
         <div
           className={cn(
-            'w-full h-full rounded-xl border-2 transition-all duration-200 bg-zinc-900/90 backdrop-blur flex flex-col items-center justify-center p-4 gap-2',
+            'w-full h-full rounded-xl border-2 transition-all duration-200 bg-white/90 dark:bg-zinc-900/90 backdrop-blur flex flex-col items-center justify-center p-4 gap-2',
             selected 
-              ? 'border-zinc-500 shadow-lg shadow-zinc-500/20' 
-              : 'border-zinc-700 hover:border-zinc-600'
+              ? 'border-zinc-400 dark:border-zinc-500 shadow-lg shadow-zinc-400/20 dark:shadow-zinc-500/20' 
+              : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600'
           )}
         >
           {/* Icon */}
-          <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center">
-            <Icon className="w-6 h-6 text-zinc-400" />
+          <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+            <Icon className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
           </div>
           
           {/* Label */}
           <div className="text-center">
-            <div className="text-sm font-semibold text-zinc-100">{nodeData.label}</div>
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{nodeData.label}</div>
+            <div className="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-500 mt-0.5">
               {config.label}
             </div>
           </div>
 
           {/* Child count badge */}
           {childCount > 0 && (
-            <div className="text-xs text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full">
+            <div className="text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
               {childCount} {childCount === 1 ? 'item' : 'items'}
             </div>
           )}
@@ -55,7 +55,7 @@ export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
           {/* Expand button */}
           <button
             onClick={() => toggleGroupCollapse(id)}
-            className="mt-1 p-1.5 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-100"
+            className="mt-1 p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
             title="Expand group"
           >
             <ChevronDownIcon className="w-4 h-4" />
@@ -63,10 +63,10 @@ export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
         </div>
         
         {/* Connection handles */}
-        <Handle type="target" position={Position.Top} className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
-        <Handle type="source" position={Position.Bottom} className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
-        <Handle type="target" position={Position.Left} id="left" className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
-        <Handle type="source" position={Position.Right} id="right" className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+        <Handle type="target" position={Position.Top} className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+        <Handle type="source" position={Position.Bottom} className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+        <Handle type="target" position={Position.Left} id="left" className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+        <Handle type="source" position={Position.Right} id="right" className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
       </div>
     );
   }
@@ -88,18 +88,18 @@ export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
         className={cn(
           'w-full h-full rounded-2xl border-2 transition-all duration-200 pointer-events-none',
           selected 
-            ? 'border-zinc-500 bg-zinc-900/20' 
-            : 'border-dashed border-zinc-800 bg-zinc-900/10 hover:bg-zinc-900/20 hover:border-zinc-700'
+            ? 'border-zinc-400 dark:border-zinc-500 bg-zinc-100/20 dark:bg-zinc-900/20' 
+            : 'border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-100/10 dark:bg-zinc-900/10 hover:bg-zinc-100/20 dark:hover:bg-zinc-900/20 hover:border-zinc-400 dark:hover:border-zinc-700'
         )}
       >
         {/* Label Badge - positioned at top */}
-        <div className="absolute -top-3 left-4 bg-zinc-950 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-zinc-500 flex items-center gap-1.5 border border-zinc-800 rounded-full pointer-events-auto cursor-pointer">
+        <div className="absolute -top-3 left-4 bg-white dark:bg-zinc-950 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-zinc-600 dark:text-zinc-500 flex items-center gap-1.5 border border-zinc-300 dark:border-zinc-800 rounded-full pointer-events-auto cursor-pointer">
           <Icon className="w-2.5 h-2.5" />
           <span>{nodeData.label}</span>
           {/* Collapse Toggle */}
           <button 
             onClick={() => toggleGroupCollapse(id)}
-            className="ml-1 p-0.5 hover:bg-zinc-800 rounded transition-colors"
+            className="ml-1 p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
             title="Collapse group"
           >
             <ChevronDownIcon className="w-2.5 h-2.5" />
@@ -110,24 +110,24 @@ export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
         <Handle
           type="target"
           position={Position.Top}
-          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+          className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
         />
         <Handle
           type="source"
           position={Position.Bottom}
-          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+          className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
         />
         <Handle
           type="target"
           position={Position.Left}
           id="left"
-          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+          className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
         />
         <Handle
           type="source"
           position={Position.Right}
           id="right"
-          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+          className="w-3! h-3! bg-zinc-300! dark:bg-zinc-700! border-2! border-white! dark:border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
         />
       </div>
     </div>

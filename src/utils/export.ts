@@ -4,10 +4,107 @@ import { DiagramData, ArchitectureNodeData, GroupNodeData, ArchitectureEdgeData 
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
 import { STORAGE_KEY } from '@/constants';
 import pako from 'pako';
+import { Node } from '@xyflow/react';
 
 // Get the React Flow viewport element
 function getReactFlowElement(): HTMLElement | null {
   return document.querySelector('.react-flow__viewport');
+}
+
+// Get bounding box of selected nodes
+function getSelectedNodesBounds(selectedNodes: Node[]): { x: number; y: number; width: number; height: number } | null {
+  if (selectedNodes.length === 0) return null;
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  selectedNodes.forEach(node => {
+    const nodeWidth = (node.style?.width as number) || (node.measured?.width || 150);
+    const nodeHeight = (node.style?.height as number) || (node.measured?.height || 100);
+
+    minX = Math.min(minX, node.position.x);
+    minY = Math.min(minY, node.position.y);
+    maxX = Math.max(maxX, node.position.x + nodeWidth);
+    maxY = Math.max(maxY, node.position.y + nodeHeight);
+  });
+
+  const padding = 40;
+  return {
+    x: minX - padding,
+    y: minY - padding,
+    width: maxX - minX + padding * 2,
+    height: maxY - minY + padding * 2,
+  };
+}
+
+// Export selected nodes as SVG
+export async function exportSelectedAsSvg(selectedNodes: Node[]): Promise<void> {
+  if (selectedNodes.length === 0) {
+    throw new Error('No nodes selected');
+  }
+
+  const reactFlowContainer = document.querySelector('.react-flow__viewport') as HTMLElement;
+  if (!reactFlowContainer) {
+    throw new Error('React Flow viewport not found');
+  }
+
+  const bounds = getSelectedNodesBounds(selectedNodes);
+  if (!bounds) {
+    throw new Error('Could not calculate bounds');
+  }
+
+  // Get the current transform of the viewport
+  const transform = window.getComputedStyle(reactFlowContainer).transform;
+  
+  const dataUrl = await toSvg(reactFlowContainer, {
+    backgroundColor: '#ffffff',
+    width: bounds.width,
+    height: bounds.height,
+    style: {
+      transform: `translate(${-bounds.x}px, ${-bounds.y}px)`,
+    },
+  });
+
+  // Download
+  const link = document.createElement('a');
+  link.download = `architecture-selection-${Date.now()}.svg`;
+  link.href = dataUrl;
+  link.click();
+}
+
+// Export selected nodes as PNG
+export async function exportSelectedAsPng(selectedNodes: Node[]): Promise<void> {
+  if (selectedNodes.length === 0) {
+    throw new Error('No nodes selected');
+  }
+
+  const reactFlowContainer = document.querySelector('.react-flow__viewport') as HTMLElement;
+  if (!reactFlowContainer) {
+    throw new Error('React Flow viewport not found');
+  }
+
+  const bounds = getSelectedNodesBounds(selectedNodes);
+  if (!bounds) {
+    throw new Error('Could not calculate bounds');
+  }
+
+  const dataUrl = await toPng(reactFlowContainer, {
+    backgroundColor: '#ffffff',
+    width: bounds.width,
+    height: bounds.height,
+    pixelRatio: 2,
+    style: {
+      transform: `translate(${-bounds.x}px, ${-bounds.y}px)`,
+    },
+  });
+
+  // Download
+  const link = document.createElement('a');
+  link.download = `architecture-selection-${Date.now()}.png`;
+  link.href = dataUrl;
+  link.click();
 }
 
 // Export as PNG

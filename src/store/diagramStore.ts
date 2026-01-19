@@ -26,12 +26,20 @@ interface HistoryState {
   edges: Edge[];
 }
 
+interface ClipboardState {
+  nodes: Node[];
+  edges: Edge[];
+}
+
 interface DiagramStore {
   // State
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
+  
+  // Clipboard
+  clipboard: ClipboardState;
   
   // History
   history: HistoryState[];
@@ -47,6 +55,11 @@ interface DiagramStore {
   deleteNode: (id: string) => void;
   duplicateNodes: (nodeIds: string[]) => void;
   deleteSelectedNodes: () => void;
+  
+  // Clipboard actions
+  copySelectedNodes: () => void;
+  pasteNodes: (position?: { x: number; y: number }) => void;
+  hasClipboardContent: () => boolean;
   
   // Group actions
   updateGroupData: (id: string, data: Partial<GroupNodeData>) => void;
@@ -91,6 +104,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
   edges: [],
   selectedNodeId: null,
   selectedEdgeId: null,
+  clipboard: { nodes: [], edges: [] },
   history: [],
   historyIndex: -1,
 
@@ -201,18 +215,46 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
   // Duplicate nodes
   duplicateNodes: (nodeIds) => {
     const { nodes, edges } = get();
-    const nodesToDuplicate = nodes.filter(n => nodeIds.includes(n.id));
+    
+    // Start with selected nodes
+    const nodesToDuplicateIds = new Set(nodeIds);
+    
+    // If a group is selected, also include all its children (even if not explicitly selected)
+    const selectedGroupIds = nodes.filter(n => nodeIds.includes(n.id) && n.type === 'group').map(n => n.id);
+    nodes.forEach(node => {
+      if (node.parentId && selectedGroupIds.includes(node.parentId)) {
+        nodesToDuplicateIds.add(node.id);
+      }
+    });
+    
+    const nodesToDuplicate = nodes.filter(n => nodesToDuplicateIds.has(n.id));
     
     if (nodesToDuplicate.length === 0) return;
 
     // Create a map of old IDs to new IDs
     const idMap = new Map<string, string>();
+    
+    // First pass: generate new IDs for all nodes
+    nodesToDuplicate.forEach(node => {
+      const newId = node.type === 'group'
+        ? `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        : `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      idMap.set(node.id, newId);
+    });
+    
+    // Separate into three categories:
+    // 1. Root nodes (no parent at all)
+    // 2. Child nodes whose parent IS being duplicated (need parentId remapping to new parent)
+    // 3. Child nodes whose parent is NOT being duplicated (keep original parentId)
+    const rootNodes = nodesToDuplicate.filter(n => !n.parentId);
+    const childNodesWithNewParent = nodesToDuplicate.filter(n => n.parentId && nodesToDuplicateIds.has(n.parentId));
+    const childNodesKeepingParent = nodesToDuplicate.filter(n => n.parentId && !nodesToDuplicateIds.has(n.parentId));
+    
     const newNodes: Node[] = [];
     
-    // Duplicate nodes with offset position
-    nodesToDuplicate.forEach(node => {
-      const newId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      idMap.set(node.id, newId);
+    // Process root nodes first (groups and standalone nodes) - apply offset
+    rootNodes.forEach(node => {
+      const newId = idMap.get(node.id)!;
       
       newNodes.push({
         ...node,
@@ -222,7 +264,55 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
           y: node.position.y + 50,
         },
         selected: false,
-      });
+        parentId: undefined,
+        extent: undefined,
+        data: {
+          ...node.data,
+          parentId: undefined,
+        },
+      } as Node);
+    });
+    
+    // Process child nodes whose parent IS being duplicated - remap to new parent
+    childNodesWithNewParent.forEach(node => {
+      const newId = idMap.get(node.id)!;
+      const newParentId = idMap.get(node.parentId!)!;
+      
+      newNodes.push({
+        ...node,
+        id: newId,
+        // Keep relative position for child nodes (they're positioned relative to parent)
+        position: node.position,
+        selected: false,
+        parentId: newParentId,
+        extent: 'parent' as const,
+        data: {
+          ...node.data,
+          parentId: newParentId,
+        },
+      } as Node);
+    });
+    
+    // Process child nodes whose parent is NOT being duplicated - keep original parent, offset position
+    childNodesKeepingParent.forEach(node => {
+      const newId = idMap.get(node.id)!;
+      
+      newNodes.push({
+        ...node,
+        id: newId,
+        // Apply offset but keep within same parent
+        position: {
+          x: node.position.x + 50,
+          y: node.position.y + 50,
+        },
+        selected: false,
+        parentId: node.parentId,
+        extent: 'parent' as const,
+        data: {
+          ...node.data,
+          parentId: node.parentId,
+        },
+      } as Node);
     });
 
     // Duplicate edges between duplicated nodes
@@ -238,7 +328,190 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
       }
     });
 
+    // Track which new node IDs belong to which category (before we modified parentIds)
+    const newIdsWithNewParent = new Set(childNodesWithNewParent.map(n => idMap.get(n.id)!));
+    const newIdsKeepingParent = new Set(childNodesKeepingParent.map(n => idMap.get(n.id)!));
+
     // Add new nodes and edges, deselect old ones
+    // IMPORTANT: React Flow requires parent nodes to come BEFORE child nodes
+    set((state) => {
+      const existingNodes = state.nodes.map(n => ({ ...n, selected: false }));
+      
+      // Separate new nodes by category using tracked IDs
+      const nodesKeepingExistingParent = newNodes.filter(n => newIdsKeepingParent.has(n.id));
+      const nodesWithNewOrNoParent = newNodes.filter(n => !newIdsKeepingParent.has(n.id));
+      
+      // Start with existing nodes
+      let resultNodes = [...existingNodes];
+      
+      // Insert nodes keeping existing parent right after their parent
+      nodesKeepingExistingParent.forEach(newNode => {
+        const parentIndex = resultNodes.findIndex(n => n.id === newNode.parentId);
+        if (parentIndex !== -1) {
+          // Find the last child of this parent to insert after
+          let insertIndex = parentIndex + 1;
+          while (insertIndex < resultNodes.length && resultNodes[insertIndex].parentId === newNode.parentId) {
+            insertIndex++;
+          }
+          resultNodes.splice(insertIndex, 0, { ...newNode, selected: true });
+        } else {
+          resultNodes.push({ ...newNode, selected: true });
+        }
+      });
+      
+      // Add nodes with new parent or no parent at the end
+      // These are already in correct order (roots/groups first, then their children)
+      resultNodes = [
+        ...resultNodes,
+        ...nodesWithNewOrNoParent.map(n => ({ ...n, selected: true })),
+      ];
+      
+      return {
+        nodes: resultNodes,
+        edges: [...state.edges, ...newEdges],
+        selectedNodeId: null,
+      };
+    });
+    
+    get().saveToHistory();
+    debouncedSave(get().saveDiagram);
+  },
+
+  // Copy selected nodes to clipboard
+  copySelectedNodes: () => {
+    const { nodes, edges } = get();
+    const selectedNodes = nodes.filter(n => n.selected);
+    
+    if (selectedNodes.length === 0) return;
+
+    // Start with selected nodes
+    const nodesToCopy = new Set(selectedNodes.map(n => n.id));
+    
+    // If a group is selected, also include all its children (even if not explicitly selected)
+    const selectedGroupIds = selectedNodes.filter(n => n.type === 'group').map(n => n.id);
+    nodes.forEach(node => {
+      if (node.parentId && selectedGroupIds.includes(node.parentId)) {
+        nodesToCopy.add(node.id);
+      }
+    });
+    
+    // Get all nodes to copy (including auto-included children)
+    const allNodesToCopy = nodes.filter(n => nodesToCopy.has(n.id));
+    
+    // Copy edges that connect only copied nodes
+    const selectedEdges = edges.filter(
+      edge => nodesToCopy.has(edge.source) && nodesToCopy.has(edge.target)
+    );
+
+    // Deep clone to avoid reference issues
+    set({
+      clipboard: {
+        nodes: JSON.parse(JSON.stringify(allNodesToCopy)),
+        edges: JSON.parse(JSON.stringify(selectedEdges)),
+      },
+    });
+  },
+
+  // Paste nodes from clipboard
+  pasteNodes: (position) => {
+    const { clipboard, nodes } = get();
+    
+    if (clipboard.nodes.length === 0) return;
+
+    // Create a map of old IDs to new IDs
+    const idMap = new Map<string, string>();
+    
+    // First pass: generate new IDs for all nodes
+    clipboard.nodes.forEach(node => {
+      const newId = node.type === 'group' 
+        ? `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        : `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      idMap.set(node.id, newId);
+    });
+    
+    // Separate root nodes (no parent or parent not in clipboard) from child nodes
+    const clipboardNodeIds = new Set(clipboard.nodes.map(n => n.id));
+    const rootNodes = clipboard.nodes.filter(n => !n.parentId || !clipboardNodeIds.has(n.parentId));
+    const childNodes = clipboard.nodes.filter(n => n.parentId && clipboardNodeIds.has(n.parentId));
+    
+    // Calculate offset based on root nodes only
+    let offsetX = 50;
+    let offsetY = 50;
+    
+    if (position && rootNodes.length > 0) {
+      // Calculate the center of root nodes (not children, as they have relative positions)
+      const minX = Math.min(...rootNodes.map(n => n.position.x));
+      const minY = Math.min(...rootNodes.map(n => n.position.y));
+      const maxX = Math.max(...rootNodes.map(n => n.position.x));
+      const maxY = Math.max(...rootNodes.map(n => n.position.y));
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      
+      // Offset to center pasted nodes around the click position
+      offsetX = position.x - centerX;
+      offsetY = position.y - centerY;
+    }
+    
+    const newNodes: Node[] = [];
+    
+    // Process root nodes first (groups and standalone nodes)
+    rootNodes.forEach(node => {
+      const newId = idMap.get(node.id)!;
+      
+      newNodes.push({
+        ...node,
+        id: newId,
+        position: {
+          x: node.position.x + offsetX,
+          y: node.position.y + offsetY,
+        },
+        selected: false,
+        // Remove any stale parent reference for root nodes
+        parentId: undefined,
+        extent: undefined,
+        data: {
+          ...node.data,
+          parentId: undefined,
+        },
+      } as Node);
+    });
+    
+    // Process child nodes - keep their relative positions, update parentId
+    childNodes.forEach(node => {
+      const newId = idMap.get(node.id)!;
+      const newParentId = idMap.get(node.parentId!)!;
+      
+      newNodes.push({
+        ...node,
+        id: newId,
+        // Keep relative position for child nodes (they're positioned relative to parent)
+        position: node.position,
+        selected: false,
+        parentId: newParentId,
+        extent: 'parent' as const,
+        data: {
+          ...node.data,
+          parentId: newParentId,
+        },
+      } as Node);
+    });
+
+    // Create new edges with updated source/target IDs
+    const newEdges: Edge[] = [];
+    clipboard.edges.forEach(edge => {
+      if (idMap.has(edge.source) && idMap.has(edge.target)) {
+        newEdges.push({
+          ...edge,
+          id: `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          source: idMap.get(edge.source)!,
+          target: idMap.get(edge.target)!,
+        });
+      }
+    });
+
+    // Add new nodes and edges, deselect old ones and select new ones
+    // IMPORTANT: React Flow requires parent nodes to come BEFORE child nodes
+    // newNodes is already ordered correctly (roots first, then children)
     set((state) => ({
       nodes: [
         ...state.nodes.map(n => ({ ...n, selected: false })),
@@ -250,6 +523,12 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     
     get().saveToHistory();
     debouncedSave(get().saveDiagram);
+  },
+
+  // Check if clipboard has content
+  hasClipboardContent: () => {
+    const { clipboard } = get();
+    return clipboard.nodes.length > 0;
   },
 
   // Update group data

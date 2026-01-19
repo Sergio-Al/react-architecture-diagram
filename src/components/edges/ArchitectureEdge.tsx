@@ -6,6 +6,8 @@ import {
 } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { ArchitectureEdgeData } from '@/types';
+import { useThemeStore } from '@/store/themeStore';
+import { useEffect, useState } from 'react';
 
 export function ArchitectureEdge({
   id,
@@ -19,6 +21,18 @@ export function ArchitectureEdge({
   selected,
 }: EdgeProps) {
   const edgeData = data as ArchitectureEdgeData | undefined;
+  const { theme } = useThemeStore();
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    // Determine if dark mode is active
+    if (theme === 'system') {
+      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    } else {
+      setIsDark(theme === 'dark');
+    }
+  }, [theme]);
+
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -29,6 +43,12 @@ export function ArchitectureEdge({
   });
 
   const isAnimated = edgeData?.animated ?? false;
+
+  // Theme-aware edge colors
+  const edgeColors = {
+    default: isDark ? '#52525b' : '#a1a1aa',
+    selected: isDark ? '#a1a1aa' : '#71717a',
+  };
 
   const getProtocolColor = () => {
     switch (edgeData?.protocol) {
@@ -58,7 +78,7 @@ export function ArchitectureEdge({
   const getEdgeStyle = () => {
     const baseStyle: React.CSSProperties = {
       strokeWidth: 2,
-      stroke: selected ? '#a1a1aa' : '#52525b',
+      stroke: selected ? edgeColors.selected : edgeColors.default,
     };
 
     switch (edgeData?.protocol) {
@@ -128,9 +148,9 @@ export function ArchitectureEdge({
             }}
             className={cn(
               'px-2 py-0.5 text-[10px] font-medium rounded-full',
-              'bg-zinc-900 border border-zinc-700',
-              'text-zinc-400',
-              selected && 'border-zinc-500 text-zinc-200'
+              'bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700',
+              'text-zinc-600 dark:text-zinc-400',
+              selected && 'border-zinc-400 dark:border-zinc-500 text-zinc-800 dark:text-zinc-200'
             )}
           >
             {label}
