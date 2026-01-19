@@ -1,0 +1,137 @@
+import { memo } from 'react';
+import { NodeProps, NodeResizer, Handle, Position } from '@xyflow/react';
+import { cn } from '@/lib/utils';
+import { GroupNodeData } from '@/types';
+import { GROUP_TYPES_CONFIG } from '@/constants';
+import { useDiagramStore } from '@/store/diagramStore';
+import { 
+  ChevronDownIcon,
+  ChevronRightIcon
+} from '@heroicons/react/24/outline';
+
+export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
+  const nodeData = data as unknown as GroupNodeData;
+  const config = GROUP_TYPES_CONFIG[nodeData.groupType] || GROUP_TYPES_CONFIG.vpc;
+  const Icon = config.icon;
+  const isCollapsed = nodeData.collapsed ?? false;
+  const toggleGroupCollapse = useDiagramStore((state) => state.toggleGroupCollapse);
+  const nodes = useDiagramStore((state) => state.nodes);
+  
+  // Count child nodes using parentId
+  const childCount = nodes.filter(n => n.parentId === id).length;
+
+  // Collapsed view - compact card
+  if (isCollapsed) {
+    return (
+      <div className="pointer-events-auto w-full h-full">
+        <div
+          className={cn(
+            'w-full h-full rounded-xl border-2 transition-all duration-200 bg-zinc-900/90 backdrop-blur flex flex-col items-center justify-center p-4 gap-2',
+            selected 
+              ? 'border-zinc-500 shadow-lg shadow-zinc-500/20' 
+              : 'border-zinc-700 hover:border-zinc-600'
+          )}
+        >
+          {/* Icon */}
+          <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <Icon className="w-6 h-6 text-zinc-400" />
+          </div>
+          
+          {/* Label */}
+          <div className="text-center">
+            <div className="text-sm font-semibold text-zinc-100">{nodeData.label}</div>
+            <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">
+              {config.label}
+            </div>
+          </div>
+
+          {/* Child count badge */}
+          {childCount > 0 && (
+            <div className="text-xs text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full">
+              {childCount} {childCount === 1 ? 'item' : 'items'}
+            </div>
+          )}
+
+          {/* Expand button */}
+          <button
+            onClick={() => toggleGroupCollapse(id)}
+            className="mt-1 p-1.5 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-100"
+            title="Expand group"
+          >
+            <ChevronDownIcon className="w-4 h-4" />
+          </button>
+        </div>
+        
+        {/* Connection handles */}
+        <Handle type="target" position={Position.Top} className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+        <Handle type="source" position={Position.Bottom} className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+        <Handle type="target" position={Position.Left} id="left" className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+        <Handle type="source" position={Position.Right} id="right" className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity" />
+      </div>
+    );
+  }
+
+  // Expanded view - container
+  return (
+    <div className="pointer-events-none w-full h-full">
+      {/* Resizer - only when selected */}
+      <NodeResizer 
+        minWidth={200} 
+        minHeight={150} 
+        isVisible={selected}
+        lineClassName="!border-zinc-500 pointer-events-auto"
+        handleClassName="!w-2.5 !h-2.5 !bg-zinc-300 !border-zinc-950 pointer-events-auto"
+      />
+
+      {/* Group Container */}
+      <div
+        className={cn(
+          'w-full h-full rounded-2xl border-2 transition-all duration-200 pointer-events-none',
+          selected 
+            ? 'border-zinc-500 bg-zinc-900/20' 
+            : 'border-dashed border-zinc-800 bg-zinc-900/10 hover:bg-zinc-900/20 hover:border-zinc-700'
+        )}
+      >
+        {/* Label Badge - positioned at top */}
+        <div className="absolute -top-3 left-4 bg-zinc-950 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-zinc-500 flex items-center gap-1.5 border border-zinc-800 rounded-full pointer-events-auto cursor-pointer">
+          <Icon className="w-2.5 h-2.5" />
+          <span>{nodeData.label}</span>
+          {/* Collapse Toggle */}
+          <button 
+            onClick={() => toggleGroupCollapse(id)}
+            className="ml-1 p-0.5 hover:bg-zinc-800 rounded transition-colors"
+            title="Collapse group"
+          >
+            <ChevronDownIcon className="w-2.5 h-2.5" />
+          </button>
+        </div>
+
+        {/* Connection handles */}
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+        />
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="left"
+          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="right"
+          className="w-3! h-3! bg-zinc-700! border-2! border-zinc-950! rounded-full! opacity-0 hover:opacity-100 transition-opacity pointer-events-auto"
+        />
+      </div>
+    </div>
+  );
+});
+
+GroupNode.displayName = 'GroupNode';

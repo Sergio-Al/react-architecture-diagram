@@ -1,0 +1,152 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Grid Background Pattern */
+.bg-grid-pattern {
+  background-image: radial-gradient(#27272a 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Custom Range Slider */
+input[type=range] {
+  -webkit-appearance: none;
+  background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #e4e4e7;
+  border: 2px solid #09090b;
+  cursor: pointer;
+  margin-top: -6px;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: #27272a;
+  border-radius: 2px;
+}
+
+/* Node selection glow */
+.node-selected {
+  border-color: #e4e4e7 !important;
+  box-shadow: 0 0 0 1px #e4e4e7, 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide text selection while dragging */
+.noselect {
+  user-select: none;
+}
+
+/* React Flow customizations */
+.react-flow__background {
+  background-color: #09090b !important;
+}
+
+.react-flow__controls {
+  display: none;
+}
+
+.react-flow__minimap {
+  display: none;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+/* Custom edges */
+.react-flow__edge-path {
+  stroke: #52525b;
+  stroke-width: 1.5;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #a1a1aa;
+  stroke-width: 2;
+}
+
+/* Remove default node styling */
+.react-flow__node {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Connection line */
+.react-flow__connection-line {
+  stroke: #71717a;
+  stroke-width: 1.5;
+}
+
+/* Handle styling */
+.react-flow__handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #3f3f46 !important;
+  border: 2px solid #09090b !important;
+  min-width: 8px !important;
+  min-height: 8px !important;
+}
+
+.react-flow__handle:hover {
+  background: #71717a !important;
+}
+
+/* Animation for panels */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Edge flow animation - data passing effect */
+@keyframes flowAnimation {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animated-edge-flow {
+  animation: flowAnimation 0.6s linear infinite;
+}
+
+.animated-edge-dot {
+  filter: drop-shadow(0 0 4px #60a5fa);
+}
