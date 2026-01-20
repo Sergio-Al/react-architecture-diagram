@@ -81,6 +81,11 @@ export function ArchitectureEdge({
       stroke: selected ? edgeColors.selected : edgeColors.default,
     };
 
+    // If async, use dotted pattern regardless of protocol
+    if (edgeData?.async) {
+      return { ...baseStyle, strokeDasharray: '2 4' };
+    }
+
     switch (edgeData?.protocol) {
       case 'grpc':
         return { ...baseStyle, strokeDasharray: '5 5' };
@@ -96,14 +101,69 @@ export function ArchitectureEdge({
   };
 
   const label = edgeData?.label || (edgeData?.method ? `${edgeData.method}` : edgeData?.protocol?.toUpperCase());
+  
+  // Build label with async indicator and schema name
+  let fullLabel = label;
+  
+  // Add async indicator
+  if (edgeData?.async) {
+    fullLabel = fullLabel ? `${fullLabel} (async)` : '(async)';
+  }
+  
+  // Append schema name to label if data contract exists
+  if (edgeData?.dataContract?.schemaName) {
+    const baseLabel = fullLabel || edgeData?.protocol?.toUpperCase() || 'DATA';
+    fullLabel = `${baseLabel} • ${edgeData.dataContract.schemaName}`;
+  }
+
+  // Determine marker IDs for bidirectional support
+  const isBidirectional = edgeData?.bidirectional ?? false;
+  const markerEnd = isBidirectional ? `url(#arrow-${id}-end)` : 'url(#arrow-end)';
+  const markerStart = isBidirectional ? `url(#arrow-${id}-start)` : undefined;
 
   return (
     <>
+      {/* Arrow markers for bidirectional edges */}
+      {isBidirectional && (
+        <defs>
+          <marker
+            id={`arrow-${id}-end`}
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto"
+          >
+            <path
+              d="M 0 0 L 10 5 L 0 10 z"
+              fill={selected ? edgeColors.selected : edgeColors.default}
+            />
+          </marker>
+          <marker
+            id={`arrow-${id}-start`}
+            viewBox="0 0 10 10"
+            refX="1"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path
+              d="M 0 0 L 10 5 L 0 10 z"
+              fill={selected ? edgeColors.selected : edgeColors.default}
+            />
+          </marker>
+        </defs>
+      )}
+
       {/* Base edge line */}
       <BaseEdge 
         id={id} 
         path={edgePath} 
         style={getEdgeStyle()}
+        markerEnd={markerEnd}
+        markerStart={markerStart}
       />
       
       {/* Animated flow overlay - only when animated is enabled */}
@@ -138,7 +198,7 @@ export function ArchitectureEdge({
         </g>
       )}
       
-      {label && (
+      {fullLabel && (
         <EdgeLabelRenderer>
           <div
             style={{
@@ -152,8 +212,9 @@ export function ArchitectureEdge({
               'text-zinc-600 dark:text-zinc-400',
               selected && 'border-zinc-400 dark:border-zinc-500 text-zinc-800 dark:text-zinc-200'
             )}
+            title={edgeData?.dataContract?.description || edgeData?.description}
           >
-            {label}
+            {fullLabel}
           </div>
         </EdgeLabelRenderer>
       )}

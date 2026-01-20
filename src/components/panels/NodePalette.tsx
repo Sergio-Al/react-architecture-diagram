@@ -1,8 +1,8 @@
 import { useDragEvent } from '@/hooks/useDragEvent';
-import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
+import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, COMMENT_CONFIG } from '@/constants';
 import { ArchitectureNodeType, GroupNodeType } from '@/types';
 import { cn } from '@/lib/utils';
-import { MagnifyingGlassIcon, UserCircleIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, UserCircleIcon, Squares2X2Icon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
 // Group configuration for node categories with shortcuts
@@ -60,6 +60,14 @@ export function NodePalette() {
            type.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  // Filter comments
+  const showComments = searchQuery === '' || 
+    COMMENT_CONFIG.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    COMMENT_CONFIG.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    'comment'.includes(searchQuery.toLowerCase()) ||
+    'annotation'.includes(searchQuery.toLowerCase()) ||
+    'note'.includes(searchQuery.toLowerCase());
+
   return (
     <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col z-20">
       {/* Search */}
@@ -78,6 +86,23 @@ export function NodePalette() {
       
       {/* Categories */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Annotations Section */}
+        {showComments && (
+          <div>
+            <h3 className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-3 flex items-center gap-2">
+              <ChatBubbleBottomCenterTextIcon className="w-3 h-3" />
+              Annotations
+            </h3>
+            <div className="space-y-2">
+              <CommentDraggableNode />
+            </div>
+          </div>
+        )}
+
+        {showComments && (filteredGroups.length > 0 || Object.keys(filteredCategories).length > 0) && (
+          <div className="h-px bg-zinc-200 dark:bg-zinc-800 w-full" />
+        )}
+
         {/* Infrastructure Groups Section */}
         {filteredGroups.length > 0 && (
           <div>
@@ -133,6 +158,31 @@ export function NodePalette() {
         </div>
       </div>
     </aside>
+  );
+}
+
+// Draggable comment component
+function CommentDraggableNode() {
+  const Icon = COMMENT_CONFIG.icon;
+  const { onDragStart } = useDragEvent('comment');
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      className="group cursor-grab active:cursor-grabbing flex items-center gap-3 p-2 rounded-md hover:bg-yellow-50 dark:hover:bg-yellow-950/30 border border-transparent hover:border-yellow-200 dark:hover:border-yellow-800 transition-all relative"
+    >
+      <span className="p-1.5 rounded bg-yellow-100 dark:bg-yellow-900/30">
+        <Icon className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+      </span>
+      <div className="flex flex-col flex-1">
+        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{COMMENT_CONFIG.label}</span>
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-600">{COMMENT_CONFIG.description}</span>
+      </div>
+      <kbd className="text-[8px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+        N
+      </kbd>
+    </div>
   );
 }
 

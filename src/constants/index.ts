@@ -1,4 +1,4 @@
-import { ArchitectureNodeType, GroupNodeType } from '@/types';
+import { ArchitectureNodeType, GroupNodeType, CommentColor } from '@/types';
 import {
   CpuChipIcon,
   CircleStackIcon,
@@ -11,6 +11,7 @@ import {
   ServerStackIcon,
   GlobeAmericasIcon,
   RectangleGroupIcon,
+  ChatBubbleBottomCenterTextIcon,
 } from '@heroicons/react/24/outline';
 
 // Node type configuration with colors and icons
@@ -198,3 +199,76 @@ export const GROUP_TYPES_CONFIG: Record<
     defaultLabel: 'Subnet',
   },
 };
+
+// Data format configuration for edge data contracts
+export const DATA_FORMATS = {
+  json: {
+    label: 'JSON',
+    description: 'JavaScript Object Notation',
+    placeholder: '{\n  "id": "string",\n  "name": "string"\n}',
+  },
+  protobuf: {
+    label: 'Protocol Buffers',
+    description: 'Google Protocol Buffers',
+    placeholder: 'syntax = "proto3";\n\nmessage User {\n  string id = 1;\n  string name = 2;\n}',
+  },
+  avro: {
+    label: 'Apache Avro',
+    description: 'Apache Avro Schema',
+    placeholder: '{\n  "type": "record",\n  "name": "User",\n  "fields": [\n    {"name": "id", "type": "string"}\n  ]\n}',
+  },
+  xml: {
+    label: 'XML',
+    description: 'Extensible Markup Language',
+    placeholder: '<User>\n  <id>string</id>\n  <name>string</name>\n</User>',
+  },
+  binary: {
+    label: 'Binary',
+    description: 'Binary data format',
+    placeholder: 'Binary format specification...',
+  },
+  text: {
+    label: 'Plain Text',
+    description: 'Plain text format',
+    placeholder: 'Text format description...',
+  },
+} as const;
+
+// Comment/annotation configuration
+export const COMMENT_CONFIG = {
+  label: 'Comment',
+  description: 'Add a note or annotation',
+  icon: ChatBubbleBottomCenterTextIcon,
+  colors: {
+    yellow: {
+      bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+      border: 'border-yellow-300 dark:border-yellow-700',
+      text: 'text-yellow-900 dark:text-yellow-100',
+      iconBg: 'bg-yellow-200 dark:bg-yellow-800',
+    },
+    blue: {
+      bg: 'bg-blue-50 dark:bg-blue-950/30',
+      border: 'border-blue-300 dark:border-blue-700',
+      text: 'text-blue-900 dark:text-blue-100',
+      iconBg: 'bg-blue-200 dark:bg-blue-800',
+    },
+    green: {
+      bg: 'bg-green-50 dark:bg-green-950/30',
+      border: 'border-green-300 dark:border-green-700',
+      text: 'text-green-900 dark:text-green-100',
+      iconBg: 'bg-green-200 dark:bg-green-800',
+    },
+    pink: {
+      bg: 'bg-pink-50 dark:bg-pink-950/30',
+      border: 'border-pink-300 dark:border-pink-700',
+      text: 'text-pink-900 dark:text-pink-100',
+      iconBg: 'bg-pink-200 dark:bg-pink-800',
+    },
+    purple: {
+      bg: 'bg-purple-50 dark:bg-purple-950/30',
+      border: 'border-purple-300 dark:border-purple-700',
+      text: 'text-purple-900 dark:text-purple-100',
+      iconBg: 'bg-purple-200 dark:bg-purple-800',
+    },
+  } as Record<CommentColor, { bg: string; border: string; text: string; iconBg: string }>,
+} as const;

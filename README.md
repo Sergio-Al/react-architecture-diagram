@@ -1,20 +1,40 @@
-# Architecture Diagram
+# 🏗️ Architecture Flow Designer
 
-An interactive visual tool for designing and documenting software architecture. Create professional diagrams with services, databases, queues, and their connections using an intuitive drag-and-drop interface.
+A visual architecture documentation platform for designing, documenting, and communicating microservice systems—capturing not just *what* components exist, but *how data flows* between them.
+
+Define service architectures with protocol-aware connections, data contract definitions, and deployment boundaries. Use as living documentation for onboarding, API specs, and system reviews.
 
 ![Architecture Diagram](https://img.shields.io/badge/React-18-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![React Flow](https://img.shields.io/badge/React%20Flow-12-green)
 
+## 🎯 Use Cases
+
+- **📋 Onboarding** — New developers understand system architecture visually
+- **📝 API Documentation** — Data contracts live alongside the diagram
+- **🔍 System Review** — Trace data flow through services
+- **📐 Architecture Design** — Plan new features with clear integration points
+
 ## ✨ Features
 
-- **Drag & Drop Interface** - Add components from the palette to the canvas
-- **Multiple Node Types** - Services, databases, queues, caches, gateways, storage, and more
-- **Group Containers** - Organize with VPCs, Clusters, Regions, and Subnets
-- **Animated Edges** - Protocol-colored flowing animations (HTTP, gRPC, WebSocket, Kafka)
-- **Multi-Select** - Box selection and Shift+click for multiple items
-- **Collapsible Groups** - Hide/show group contents for cleaner views
-- **Export Options** - PNG, SVG, and JSON formats
-- **Auto-Save** - Persists to localStorage automatically
-- **Undo/Redo** - Full history support with Cmd+Z / Cmd+Y
+### Core Diagramming
+- **Drag & Drop Interface** — Add components from the palette to the canvas
+- **8 Node Types** — Services, databases, queues, caches, gateways, storage, clients, external APIs
+- **Group Containers** — Organize with VPCs, Clusters, Regions, and Subnets
+- **Auto-Layout** — Dagre.js automatic arrangement (Top-to-Bottom, Left-to-Right)
+
+### Data Flow & Contracts
+- **Protocol-Aware Edges** — HTTP, gRPC, WebSocket, AMQP, Kafka, TCP with visual differentiation
+- **Data Contracts** — Define JSON, Protobuf, Avro, XML schemas directly on edges
+- **Animated Flow** — Protocol-colored flowing animations showing data movement
+- **Schema Labels** — Edge labels show protocol + schema name (e.g., `AMQP • TaskCreatedEvent`)
+
+### Productivity
+- **Multi-Select** — Box selection and Shift+click for multiple items
+- **Copy/Paste** — Full clipboard support with Cmd+C/V
+- **Collapsible Groups** — Hide/show group contents for cleaner views
+- **Export Options** — PNG, SVG, JSON formats + export selected only
+- **Auto-Save** — Persists to localStorage automatically
+- **Undo/Redo** — Full history support
+- **Dark/Light Mode** — Theme toggle with system preference support
 
 ## 🚀 Quick Start
 
@@ -52,10 +72,15 @@ npm run preview
 |----------|--------|
 | `V` | Select mode |
 | `H` | Pan mode |
+| `Cmd/Ctrl + C` | Copy selected |
+| `Cmd/Ctrl + V` | Paste |
 | `Cmd/Ctrl + D` | Duplicate selected |
+| `Cmd/Ctrl + L` | Auto-layout |
 | `Delete / Backspace` | Delete selected |
 | `Cmd/Ctrl + Z` | Undo |
 | `Cmd/Ctrl + Y` | Redo |
+| `[` | Toggle left panel |
+| `]` | Toggle right panel |
 | `Shift + Click` | Add to selection |
 
 ## 🧩 Component Types
@@ -89,6 +114,16 @@ npm run preview
 | AMQP/RabbitMQ | Dotted amber |
 | Kafka | Dotted red |
 | TCP | Thick cyan |
+
+### Data Contract Formats
+| Format | Description |
+|--------|-------------|
+| JSON | JavaScript Object Notation |
+| Protobuf | Google Protocol Buffers |
+| Avro | Apache Avro Schema |
+| XML | Extensible Markup Language |
+| Binary | Binary data format |
+| Text | Plain text format |
 
 ## 🛠️ Tech Stack
 

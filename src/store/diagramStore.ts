@@ -20,6 +20,7 @@ import {
   AUTO_SAVE_DEBOUNCE, 
   MAX_HISTORY_LENGTH 
 } from '@/constants';
+import { applyDagreLayout, LayoutDirection } from '@/utils/layout';
 
 interface HistoryState {
   nodes: Node[];
@@ -72,6 +73,9 @@ interface DiagramStore {
   
   setSelectedNode: (id: string | null) => void;
   setSelectedEdge: (id: string | null) => void;
+  
+  // Layout actions
+  applyAutoLayout: (direction?: LayoutDirection) => void;
   
   // History actions
   undo: () => void;
@@ -859,5 +863,28 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     });
     get().saveToHistory();
     get().saveDiagram();
+  },
+
+  // Apply auto-layout using Dagre
+  applyAutoLayout: (direction = 'TB') => {
+    const { nodes, edges } = get();
+    
+    if (nodes.length === 0) {
+      return; // Nothing to layout
+    }
+
+    // Save state before layout
+    get().saveToHistory();
+
+    // Apply Dagre layout algorithm
+    const layoutedNodes = applyDagreLayout(nodes, edges, { direction });
+
+    // Update nodes with new positions
+    set({
+      nodes: layoutedNodes,
+    });
+
+    // Save after layout
+    debouncedSave(get().saveDiagram);
   },
 }));

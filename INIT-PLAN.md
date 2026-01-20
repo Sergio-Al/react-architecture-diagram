@@ -1,14 +1,19 @@
-# 🏗️ Component/Microservice Architecture Diagram - Project Plan
+# 🏗️ Architecture Flow Designer - Project Plan
 
-An interactive visual tool for designing and documenting software architecture.
+A visual architecture documentation platform for designing, documenting, and communicating microservice systems.
 
 ---
 
 ## 📋 Project Overview
 
-**Goal:** Create an interactive tool for designing and visualizing software architecture with services, databases, queues, and their connections.
+**Goal:** Create an interactive platform for designing microservice architectures with protocol-aware connections, data contract definitions, and deployment boundaries—serving as living technical documentation.
 
-**Tech Stack:**
+**Key Differentiators:**
+- Not just box-and-line diagrams, but **process & data flow documentation**
+- Edges represent **communication contracts** (protocol + data schema)
+- Serves developers, QA, DevOps, and onboarding—not just architects
+
+**Tech Stack:****
 - **React 18** (with TypeScript)
 - **@xyflow/react** (React Flow v12) - Core diagram functionality
 - **Zustand** - State management
@@ -108,7 +113,8 @@ interface ArchitectureNodeData {
 - [x] Add animated edges with flowing dots (SVG animateMotion)
 - [x] Protocol-based color coding for animations
 - [x] Edge labels (protocol, method)
-- [ ] Support bidirectional connections
+- [x] **Data contracts** - Protocol-agnostic schema definitions on edges
+- [x] Support bidirectional connections
 
 ### 3.3 Edge Data Structure
 ```typescript
@@ -118,6 +124,21 @@ interface ArchitectureEdgeData {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   async?: boolean;
   animated?: boolean;
+  dataContract?: {
+    format: 'json' | 'protobuf' | 'avro' | 'xml' | 'binary' | 'text';
+    schemaName?: string;
+    schema?: string;
+    description?: string;
+  };
+}
+```
+
+### 3.4 Data Contract Features
+- [x] Define data schemas on edges (JSON, Protobuf, Avro, XML, Binary, Text)
+- [x] Schema name displayed in edge label (e.g., `AMQP • TaskCreatedEvent`)
+- [x] Full schema editor in Properties Panel with **CodeMirror** syntax highlighting
+- [x] Format-specific placeholder templates
+- [x] Tooltip shows contract description on hover
 }
 ```
 
@@ -144,7 +165,7 @@ interface ArchitectureEdgeData {
 ### 4.3 Top Toolbar (Navbar)
 - [x] Undo / Redo buttons
 - [x] Export button with dialog (PNG, SVG, JSON)
-- [ ] Layout options (auto-arrange)
+- [x] Layout options (auto-arrange with Dagre)
 - [ ] Save / Load diagram buttons
 
 ### 4.4 Floating Toolbar
@@ -165,12 +186,18 @@ interface ArchitectureEdgeData {
 interface DiagramStore {
   nodes: Node[];
   edges: Edge[];
+  clipboard: ClipboardState; // NEW: For copy/paste
   
   // Actions
   addNode: (node: Node) => void;
   updateNodeData: (id: string, data: Partial<NodeData>) => void;
   deleteElements: (nodeIds: string[], edgeIds: string[]) => void;
   duplicateNodes: (nodeIds: string[]) => void;
+  
+  // Clipboard actions (NEW)
+  copySelectedNodes: () => void;
+  pasteNodes: (position?: { x: number; y: number }) => void;
+  hasClipboardContent: () => boolean;
   
   // Grouping
   addNodeToGroup: (nodeId: string, groupId: string) => void;
@@ -221,6 +248,7 @@ interface DiagramStore {
 - [x] **PNG** - Using `html-to-image`
 - [x] **SVG** - Vector export
 - [x] **JSON** - Diagram data for re-import
+- [x] **Export Selected** - Export only selected nodes as PNG/SVG
 - [ ] **PDF** - Using `jsPDF`
 - [ ] **Markdown** - Generate architecture doc
 
@@ -234,18 +262,25 @@ interface DiagramStore {
 
 - [ ] **Templates** - Pre-built architecture patterns
 - [ ] **Real-time collaboration** - Using WebSockets/Yjs
-- [x] **Dark mode** - Default theme (zinc color palette)
+- [x] **Dark/Light mode** - Theme toggle with CSS variables (zinc color palette)
+- [x] **Panel visibility** - Toggle left/right panels via keyboard or UI
 - [x] **Keyboard shortcuts**:
   - `V` - Select mode
   - `H` - Pan mode
   - `Cmd/Ctrl + D` - Duplicate selected
+  - `Cmd/Ctrl + C` - Copy selected nodes
+  - `Cmd/Ctrl + V` - Paste nodes
+  - `Cmd/Ctrl + L` - Auto-layout (Top to Bottom)
   - `Delete/Backspace` - Delete selected
   - `Cmd/Ctrl + Z` - Undo
   - `Cmd/Ctrl + Y` - Redo
   - `Shift + Click` - Multi-select
-- [ ] **Auto-layout** - Dagre.js for automatic arrangement
+  - `[` - Toggle left panel visibility
+  - `]` - Toggle right panel visibility
+  - `N` - Add comment/annotation
+- [x] **Auto-layout** - Dagre.js for automatic arrangement (Top-to-Bottom, Left-to-Right)
 - [ ] **Search** - Find nodes by name
-- [ ] **Comments/annotations** on diagram
+- [x] **Comments/annotations** on diagram - Sticky-note style comment nodes with colors
 - [x] **Multi-select** - Box selection and Shift+click
 - [x] **Trackpad navigation** - Two-finger pan, pinch zoom
 
@@ -257,14 +292,14 @@ interface DiagramStore {
 |-------|--------|------------|
 | Phase 1: Setup | ✅ Complete | 100% |
 | Phase 2: Custom Nodes | ✅ Complete | 95% |
-| Phase 3: Custom Edges | ✅ Complete | 90% |
-| Phase 4: UI Components | ✅ Complete | 90% |
+| Phase 3: Custom Edges | ✅ Complete | 95% |
+| Phase 4: UI Components | ✅ Complete | 100% |
 | Phase 5: State Management | ✅ Complete | 100% |
 | Phase 6: Grouping | ✅ Complete | 100% |
-| Phase 7: Export | ✅ Complete | 60% |
-| Phase 8: Advanced | 🟡 Partial | 40% |
+| Phase 7: Export | ✅ Complete | 75% |
+| Phase 8: Advanced | 🟡 Partial | 70% |
 
-**Overall Progress: ~85%**
+**Overall Progress: ~95%**
 
 ---
 
@@ -282,7 +317,6 @@ interface DiagramStore {
 
 ## 🔮 Future Enhancements
 
-- [ ] Auto-layout with Dagre.js
 - [ ] PDF export
 - [ ] Shareable links
 - [ ] Templates library
@@ -290,3 +324,15 @@ interface DiagramStore {
 - [ ] Node search/filter
 - [ ] Comments/annotations
 - [ ] Node resizing 
+
+## Future Directions
+
+Future Direction Suggestions
+Given this evolution, consider adding:
+
+Feature	Value
+- Flow simulation	Animate a "request" traveling through services
+- Schema validation	Validate JSON schemas, show compatibility
+- OpenAPI import	Import existing API specs to populate contracts
+- Mermaid/PlantUML export	Generate text-based diagrams for docs
+- Version history	Track architecture changes over time

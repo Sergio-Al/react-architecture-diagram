@@ -1,6 +1,6 @@
 import { useDiagramStore } from '@/store/diagramStore';
-import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
-import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType } from '@/types';
+import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG } from '@/constants';
+import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType, DataFormat, CommentNodeData, CommentColor } from '@/types';
 import { cn } from '@/lib/utils';
 import { 
   XMarkIcon, 
@@ -10,6 +10,7 @@ import {
   Squares2X2Icon
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { CodeEditor } from '@/components/ui/CodeEditor';
 
 export function PropertiesPanel() {
   const { 
@@ -49,6 +50,140 @@ export function PropertiesPanel() {
   }
 
   if (selectedNode) {
+    // Check if it's a comment node
+    if (selectedNode.type === 'comment') {
+      const commentData = selectedNode.data as unknown as CommentNodeData;
+      const Icon = COMMENT_CONFIG.icon;
+      const color = commentData.color || 'yellow';
+      const colorConfig = COMMENT_CONFIG.colors[color];
+
+      return (
+        <aside className="w-80 bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col z-20">
+          {/* Header */}
+          <div className="h-14 border-b border-zinc-200 dark:border-zinc-800 flex items-center px-5 justify-between">
+            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Comment Properties</span>
+            <button
+              onClick={() => setSelectedNode(null)}
+              className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors">
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-8 animate-slide-in">
+            {/* Header Section */}
+            <div className="flex items-start gap-4">
+              <div className={cn('p-3 rounded-lg border', colorConfig.border, colorConfig.bg)}>
+                <Icon className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
+                  Comment
+                </h2>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 font-mono">
+                  ID: {selectedNode.id.slice(-8).toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <hr className="border-zinc-200 dark:border-zinc-800" />
+
+            {/* Fields */}
+            <div className="space-y-4">
+              {/* Text Content */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Text
+                </label>
+                <textarea
+                  value={commentData.text || ''}
+                  onChange={(e) => updateNodeData(selectedNode.id, { text: e.target.value })}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="Add your note here..."
+                  rows={6}
+                  className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-2 text-sm text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors resize-none"
+                />
+              </div>
+
+              {/* Color */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Color
+                </label>
+                <div className="relative">
+                  <select
+                    value={color}
+                    onChange={(e) => updateNodeData(selectedNode.id, { color: e.target.value as CommentColor })}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="w-full appearance-none bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors">
+                    <option value="yellow">Yellow</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                    <option value="pink">Pink</option>
+                    <option value="purple">Purple</option>
+                  </select>
+                  <ChevronDownIcon className="absolute right-2 top-2 w-3 h-3 text-zinc-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Author */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Author
+                </label>
+                <input
+                  type="text"
+                  value={commentData.author || ''}
+                  onChange={(e) => updateNodeData(selectedNode.id, { author: e.target.value })}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="Your name"
+                  className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Minimized Toggle */}
+              <div className="flex items-center justify-between py-1">
+                <label className="text-xs text-zinc-700 dark:text-zinc-300">Minimized</label>
+                <ToggleSwitch
+                  checked={commentData.minimized || false}
+                  onChange={(checked) => updateNodeData(selectedNode.id, { minimized: checked })}
+                />
+              </div>
+            </div>
+
+            {/* Metadata Section */}
+            <div className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-3 border border-zinc-200 dark:border-zinc-800 space-y-2">
+              <div className="flex justify-between text-[10px]">
+                <span className="text-zinc-500 dark:text-zinc-500">Comment ID</span>
+                <span className="text-zinc-700 dark:text-zinc-300 font-mono">{selectedNode.id.slice(-12)}</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-zinc-500 dark:text-zinc-500">Created</span>
+                <span className="text-zinc-700 dark:text-zinc-300">{commentData.createdAt ? new Date(commentData.createdAt).toLocaleDateString() : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-zinc-500 dark:text-zinc-500">Position X</span>
+                <span className="text-zinc-700 dark:text-zinc-300 font-mono">{Math.round(selectedNode.position.x)}</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-zinc-500 dark:text-zinc-500">Position Y</span>
+                <span className="text-zinc-700 dark:text-zinc-300 font-mono">{Math.round(selectedNode.position.y)}</span>
+              </div>
+            </div>
+
+            {/* Delete Button */}
+            <button
+              onClick={() => deleteNode(selectedNode.id)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+            >
+              <TrashIcon className="w-3 h-3" />
+              Delete Comment
+            </button>
+          </div>
+        </aside>
+      );
+    }
+
     // Check if it's a group node
     if (selectedNode.type === 'group') {
       const groupData = selectedNode.data as unknown as GroupNodeData;
@@ -487,9 +622,26 @@ export function PropertiesPanel() {
             {/* Async Toggle */}
             <div className="flex items-center justify-between py-1">
               <label className="text-xs text-zinc-700 dark:text-zinc-300">Asynchronous</label>
+              <div className="flex flex-col">
+                <label className="text-xs text-zinc-300">Fire & Forget</label>
+                <span className="text-[10px] text-zinc-500">Non-blocking call</span>
+              </div>
               <ToggleSwitch
                 checked={edgeData.async || false}
                 onChange={(checked) => updateEdgeData(selectedEdge.id, { async: checked })}
+              />
+            </div>
+
+            {/* Bidirectional Toggle */}
+            <div className="flex items-center justify-between py-1">
+              <label className="text-xs text-zinc-700 dark:text-zinc-300">Bidirectional</label>
+              <div className="flex flex-col">
+                <label className="text-xs text-zinc-300">Two-way Flow</label>
+                <span className="text-[10px] text-zinc-500">Request/Response</span>
+              </div>
+              <ToggleSwitch
+                checked={edgeData.bidirectional || false}
+                onChange={(checked) => updateEdgeData(selectedEdge.id, { bidirectional: checked })}
               />
             </div>
 
@@ -504,6 +656,107 @@ export function PropertiesPanel() {
                 onKeyDown={(e) => e.stopPropagation()}
                 placeholder="Describe this connection..."
                 rows={3}
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors resize-none"
+              />
+            </div>
+          </div>
+
+          <hr className="border-zinc-200 dark:border-zinc-800" />
+
+          {/* Data Contract Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
+                Data Contract
+              </label>
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-600">Optional</span>
+            </div>
+
+            {/* Format */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Format
+              </label>
+              <div className="relative">
+                <select
+                  value={edgeData.dataContract?.format || 'json'}
+                  onChange={(e) => updateEdgeData(selectedEdge.id, { 
+                    dataContract: { 
+                      ...(edgeData.dataContract || {}),
+                      format: e.target.value as DataFormat 
+                    } 
+                  })}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className="w-full appearance-none bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+                >
+                  {Object.entries(DATA_FORMATS).map(([key, config]) => (
+                    <option key={key} value={key}>
+                      {config.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="absolute right-2 top-2 w-3 h-3 text-zinc-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Schema Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Schema Name
+              </label>
+              <input
+                type="text"
+                value={edgeData.dataContract?.schemaName || ''}
+                onChange={(e) => updateEdgeData(selectedEdge.id, { 
+                  dataContract: { 
+                    ...(edgeData.dataContract || { format: 'json' }),
+                    schemaName: e.target.value 
+                  } 
+                })}
+                onKeyDown={(e) => e.stopPropagation()}
+                placeholder="e.g., TaskCreatedEvent"
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+              />
+            </div>
+
+            {/* Schema Definition */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Schema Definition
+              </label>
+              <CodeEditor
+                value={edgeData.dataContract?.schema || ''}
+                onChange={(value) => updateEdgeData(selectedEdge.id, { 
+                  dataContract: { 
+                    ...(edgeData.dataContract || { format: 'json' }),
+                    schema: value 
+                  } 
+                })}
+                format={edgeData.dataContract?.format || 'json'}
+                placeholder={DATA_FORMATS[edgeData.dataContract?.format || 'json'].placeholder}
+                height="180px"
+              />
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-600">
+                {DATA_FORMATS[edgeData.dataContract?.format || 'json'].description}
+              </span>
+            </div>
+
+            {/* Contract Description */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Contract Notes
+              </label>
+              <textarea
+                value={edgeData.dataContract?.description || ''}
+                onChange={(e) => updateEdgeData(selectedEdge.id, { 
+                  dataContract: { 
+                    ...(edgeData.dataContract || { format: 'json' }),
+                    description: e.target.value 
+                  } 
+                })}
+                onKeyDown={(e) => e.stopPropagation()}
+                placeholder="Additional notes about this data contract..."
+                rows={2}
                 className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors resize-none"
               />
             </div>

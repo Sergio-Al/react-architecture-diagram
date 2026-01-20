@@ -22,6 +22,7 @@ import {
   ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
 import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
+import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
 
 export function DiagramEditor() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null!);
@@ -29,6 +30,7 @@ export function DiagramEditor() {
   const [zoom, setZoom] = useState(100);
   const [panMode, setPanMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
+  const [showShortcuts, setShowShortcuts] = useState(false);
   
   const {
     nodes,
@@ -95,6 +97,23 @@ export function DiagramEditor() {
       y: centerY,
     });
 
+    // Check if it's a comment node
+    if (type === 'comment') {
+      const newComment: Node = {
+        id: `comment-${Date.now()}`,
+        type: 'comment',
+        position,
+        data: {
+          text: 'Add your note here...',
+          color: 'yellow',
+          createdAt: new Date().toISOString(),
+        },
+      };
+
+      addNode(newComment);
+      return;
+    }
+
     // Check if it's a group type
     if (type.startsWith('group-')) {
       const groupType = type.replace('group-', '') as GroupNodeType;
@@ -155,6 +174,23 @@ export function DiagramEditor() {
         x: event.clientX,
         y: event.clientY,
       });
+
+      // Check if it's a comment node
+      if (type === 'comment') {
+        const newComment: Node = {
+          id: `comment-${Date.now()}`,
+          type: 'comment',
+          position,
+          data: {
+            text: 'Add your note here...',
+            color: 'yellow',
+            createdAt: new Date().toISOString(),
+          },
+        };
+
+        addNode(newComment);
+        return;
+      }
 
       // Check if it's a group type
       if (type.startsWith('group-')) {
@@ -349,6 +385,10 @@ export function DiagramEditor() {
             event.preventDefault();
             addNodeAtCenter('client');
             return;
+          case 'n':
+            event.preventDefault();
+            addNodeAtCenter('comment');
+            return;
         }
       }
 
@@ -381,6 +421,13 @@ export function DiagramEditor() {
       }
       if (event.key === 'h' || event.key === 'H') {
         setPanMode(true);
+        return;
+      }
+      
+      // Show shortcuts: ?
+      if (event.key === '?' && !event.shiftKey) {
+        event.preventDefault();
+        setShowShortcuts(true);
         return;
       }
       
@@ -441,6 +488,13 @@ export function DiagramEditor() {
           event.preventDefault();
           pasteNodes(); // Paste with default offset
         }
+      }
+      
+      // Auto-layout: Ctrl/Cmd + L
+      if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+        event.preventDefault();
+        const { applyAutoLayout } = useDiagramStore.getState();
+        applyAutoLayout('TB'); // Default to top-to-bottom
       }
     };
 
@@ -561,7 +615,24 @@ export function DiagramEditor() {
         >
           <PlusIcon className="w-4 h-4" />
         </button>
+        <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 my-auto mx-1" />
+        <button
+          onClick={() => setShowShortcuts(true)}
+          className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+          title="Keyboard Shortcuts (?)"
+        >
+          <span className="text-xs font-semibold">?</span>
+        </button>
       </div>
+
+      {/* Shortcuts Help Modal */}
+      {showShortcuts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowShortcuts(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <ShortcutsHelp onClose={() => setShowShortcuts(false)} />
+          </div>
+        </div>
+      )}
 
       {/* React Flow Canvas */}
       <div ref={reactFlowWrapper} className="w-full h-full">

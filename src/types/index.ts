@@ -14,6 +14,9 @@ export type ArchitectureNodeType =
 // Group types for infrastructure containers
 export type GroupNodeType = 'vpc' | 'cluster' | 'region' | 'subnet';
 
+// Comment note colors
+export type CommentColor = 'yellow' | 'blue' | 'green' | 'pink' | 'purple';
+
 export type NodeStatus = 'active' | 'inactive' | 'warning';
 
 // Data structure for architecture nodes
@@ -37,9 +40,29 @@ export type GroupNodeData = {
   description?: string;
 } & Record<string, unknown>;
 
+// Data structure for comment/annotation nodes
+export type CommentNodeData = {
+  text: string;
+  color?: CommentColor;
+  author?: string;
+  createdAt?: string;
+  minimized?: boolean;
+} & Record<string, unknown>;
+
 // Edge protocol types
-export type EdgeProtocol = 'http' | 'grpc' | 'websocket' | 'tcp' | 'amqp' | 'kafka';
+export type EdgeProtocol = 'http' | 'https' | 'grpc' | 'websocket' | 'tcp' | 'udp' | 'amqp' | 'kafka' | 'rabbitmq';
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+// Data format types for edge data contracts
+export type DataFormat = 'json' | 'protobuf' | 'avro' | 'xml' | 'binary' | 'text';
+
+// Data contract structure for edges
+export interface DataContract {
+  format: DataFormat;
+  schemaName?: string;
+  schema?: string;
+  description?: string;
+}
 
 // Data structure for architecture edges
 export type ArchitectureEdgeData = {
@@ -48,12 +71,15 @@ export type ArchitectureEdgeData = {
   method?: HttpMethod;
   async?: boolean;
   animated?: boolean;
+  bidirectional?: boolean;
   description?: string;
+  dataContract?: DataContract;
 } & Record<string, unknown>;
 
 // Use base types from React Flow
 export type ArchitectureNode = Node<ArchitectureNodeData>;
 export type GroupNode = Node<GroupNodeData>;
+export type CommentNode = Node<CommentNodeData>;
 export type ArchitectureEdge = Edge<ArchitectureEdgeData>;
 
 // Diagram state for persistence

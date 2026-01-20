@@ -15,7 +15,8 @@ import {
   MoonIcon,
   ComputerDesktopIcon,
   Squares2X2Icon,
-  RectangleStackIcon
+  RectangleStackIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -30,19 +31,24 @@ import {
 } from '@/utils/export';
 
 export function Navbar() {
-  const { undo, redo, canUndo, canRedo, exportDiagram } = useDiagramStore();
+  const { undo, redo, canUndo, canRedo, exportDiagram, applyAutoLayout } = useDiagramStore();
   const { theme, setTheme } = useThemeStore();
   const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel } = useUIStore();
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const layoutDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setExportDropdownOpen(false);
+      }
+      if (layoutDropdownRef.current && !layoutDropdownRef.current.contains(event.target as Node)) {
+        setLayoutDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -86,6 +92,11 @@ export function Navbar() {
     } catch (error) {
       console.error('Failed to copy link:', error);
     }
+  };
+
+  const handleLayout = (direction: 'TB' | 'LR') => {
+    applyAutoLayout(direction);
+    setLayoutDropdownOpen(false);
   };
 
   const cycleTheme = () => {
@@ -162,6 +173,44 @@ export function Navbar() {
           >
             <ArrowUturnRightIcon className="w-3.5 h-3.5" />
           </button>
+        </div>
+
+        {/* Auto-Layout Dropdown */}
+        <div className="relative" ref={layoutDropdownRef}>
+          <button 
+            onClick={() => setLayoutDropdownOpen(!layoutDropdownOpen)}
+            className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+            title="Auto-arrange layout (⌘L)"
+          >
+            <SparklesIcon className="w-3.5 h-3.5" strokeWidth={2} />
+            Layout
+          </button>
+          
+          {/* Layout Dropdown Menu */}
+          {layoutDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl z-50 overflow-hidden animate-slide-in">
+              <div className="p-1">
+                <button 
+                  onClick={() => handleLayout('TB')}
+                  className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white rounded-md flex items-center gap-2"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                  Top to Bottom
+                </button>
+                <button 
+                  onClick={() => handleLayout('LR')}
+                  className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white rounded-md flex items-center gap-2"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                  Left to Right
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Export Dropdown */}
