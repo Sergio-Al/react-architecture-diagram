@@ -17,7 +17,8 @@ import {
 } from '@/types';
 import { 
   STORAGE_KEY, 
-  AUTO_SAVE_DEBOUNCE, 
+  AUTO_SAVE_DEBOUNCE,
+  getDefaultProtocolForNode, 
   MAX_HISTORY_LENGTH 
 } from '@/constants';
 import { applyDagreLayout, LayoutDirection } from '@/utils/layout';
@@ -143,6 +144,12 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
 
   // New connection
   onConnect: (connection) => {
+    // Get target node to determine default protocol
+    const state = get();
+    const targetNode = state.nodes.find(n => n.id === connection.target);
+    const targetNodeType = (targetNode?.data as ArchitectureNodeData)?.type;
+    const defaultProtocol = targetNodeType ? getDefaultProtocolForNode(targetNodeType) : 'http';
+    
     const newEdge: Edge = {
       ...connection,
       id: `edge-${Date.now()}`,
@@ -150,7 +157,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
       source: connection.source!,
       target: connection.target!,
       data: {
-        protocol: 'http',
+        protocol: defaultProtocol,
         animated: true, // Enable animation by default
       },
     };

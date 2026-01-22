@@ -9,7 +9,25 @@ export type ArchitectureNodeType =
   | 'gateway' 
   | 'external' 
   | 'storage' 
-  | 'client';
+  | 'client'
+  // Tier 1: Cloud Infrastructure
+  | 'lambda'
+  | 'loadbalancer'
+  | 'cdn'
+  | 'auth'
+  | 'container'
+  | 'dns'
+  // Tier 2: AI/ML
+  | 'llm'
+  | 'vectordb'
+  | 'mlpipeline'
+  | 'embedding'
+  // Tier 3: Cloud Services
+  | 'secrets'
+  | 'eventbus'
+  | 'datalake'
+  | 'search'
+  | 'notification';
 
 // Group types for infrastructure containers
 export type GroupNodeType = 'vpc' | 'cluster' | 'region' | 'subnet';
@@ -50,7 +68,31 @@ export type CommentNodeData = {
 } & Record<string, unknown>;
 
 // Edge protocol types
-export type EdgeProtocol = 'http' | 'https' | 'grpc' | 'websocket' | 'tcp' | 'udp' | 'amqp' | 'kafka' | 'rabbitmq';
+export type EdgeProtocol = 
+  // Standard
+  | 'http'
+  | 'grpc'
+  | 'graphql'
+  | 'websocket'
+  | 'tcp'
+  // Messaging
+  | 'amqp'
+  | 'rabbitmq'
+  | 'kafka'
+  | 'eventbridge'
+  | 'sns'
+  // Data
+  | 'sql'
+  | 'redis'
+  | 's3'
+  | 'vector'
+  | 'search'
+  // Auth/DNS
+  | 'oauth'
+  | 'dns'
+  // AI/ML
+  | 'inference';
+
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 // Data format types for edge data contracts

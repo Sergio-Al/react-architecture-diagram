@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { ArchitectureEdgeData } from '@/types';
 import { useThemeStore } from '@/store/themeStore';
 import { useEffect, useState } from 'react';
+import { PROTOCOL_CONFIG } from '@/constants';
 
 export function ArchitectureEdge({
   id,
@@ -51,26 +52,9 @@ export function ArchitectureEdge({
   };
 
   const getProtocolColor = () => {
-    switch (edgeData?.protocol) {
-      case 'http':
-      case 'https':
-        return { primary: '#3b82f6', secondary: '#60a5fa' }; // Blue
-      case 'grpc':
-        return { primary: '#10b981', secondary: '#34d399' }; // Green
-      case 'websocket':
-        return { primary: '#8b5cf6', secondary: '#a78bfa' }; // Purple
-      case 'amqp':
-      case 'rabbitmq':
-        return { primary: '#f59e0b', secondary: '#fbbf24' }; // Amber
-      case 'kafka':
-        return { primary: '#ef4444', secondary: '#f87171' }; // Red
-      case 'tcp':
-        return { primary: '#06b6d4', secondary: '#22d3ee' }; // Cyan
-      case 'udp':
-        return { primary: '#ec4899', secondary: '#f472b6' }; // Pink
-      default:
-        return { primary: '#3b82f6', secondary: '#60a5fa' }; // Default blue
-    }
+    const protocol = edgeData?.protocol || 'http';
+    const config = PROTOCOL_CONFIG[protocol];
+    return config ? { primary: config.color.primary, secondary: config.color.secondary } : { primary: '#3b82f6', secondary: '#60a5fa' };
   };
 
   const protocolColors = getProtocolColor();
@@ -86,18 +70,17 @@ export function ArchitectureEdge({
       return { ...baseStyle, strokeDasharray: '2 4' };
     }
 
-    switch (edgeData?.protocol) {
-      case 'grpc':
-        return { ...baseStyle, strokeDasharray: '5 5' };
-      case 'websocket':
-      case 'amqp':
-      case 'kafka':
-        return { ...baseStyle, strokeDasharray: '3 3' };
-      case 'tcp':
-        return { ...baseStyle, strokeWidth: 3 };
-      default:
-        return baseStyle;
+    const protocol = edgeData?.protocol || 'http';
+    const config = PROTOCOL_CONFIG[protocol];
+    
+    if (config?.style.strokeDasharray) {
+      return { ...baseStyle, strokeDasharray: config.style.strokeDasharray };
     }
+    if (config?.style.strokeWidth) {
+      return { ...baseStyle, strokeWidth: config.style.strokeWidth };
+    }
+    
+    return baseStyle;
   };
 
   const label = edgeData?.label || (edgeData?.method ? `${edgeData.method}` : edgeData?.protocol?.toUpperCase());

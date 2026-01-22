@@ -16,7 +16,8 @@ import {
   ComputerDesktopIcon,
   Squares2X2Icon,
   RectangleStackIcon,
-  SparklesIcon
+  SparklesIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -29,6 +30,7 @@ import {
   exportAsJson,
   copyShareableLink 
 } from '@/utils/export';
+import { SettingsPanel } from '@/components/panels/SettingsPanel';
 
 export function Navbar() {
   const { undo, redo, canUndo, canRedo, exportDiagram, applyAutoLayout } = useDiagramStore();
@@ -38,6 +40,7 @@ export function Navbar() {
   const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const layoutDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -270,6 +273,15 @@ export function Navbar() {
           )}
         </div>
 
+        {/* AI Settings */}
+        <button 
+          onClick={() => setSettingsOpen(true)}
+          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
+          title="AI Settings"
+        >
+          <Cog6ToothIcon className="w-3.5 h-3.5" />
+        </button>
+
         {/* Theme Toggle */}
         <button 
           onClick={cycleTheme}
@@ -295,6 +307,9 @@ export function Navbar() {
           )}
         </button>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsPanel isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </header>
   );
 }

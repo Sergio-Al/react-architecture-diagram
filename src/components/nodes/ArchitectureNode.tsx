@@ -37,7 +37,8 @@ export const ArchitectureNode = memo(({ data, selected }: NodeProps) => {
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-2 !h-2 !rounded-full !bg-zinc-300 dark:!bg-zinc-700 !border-2 !border-white dark:!border-zinc-950 !-top-1"
+        title="Input"
+        className="!w-2 !h-2 !rounded-full !bg-zinc-300 dark:!bg-zinc-700 !border-2 !border-white dark:!border-zinc-950 !-top-1 hover:!scale-150 !transition-transform"
       />
 
       {/* Icon */}
@@ -67,23 +68,26 @@ export const ArchitectureNode = memo(({ data, selected }: NodeProps) => {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-2 !h-2 !rounded-full !bg-zinc-300 dark:!bg-zinc-700 !border-2 !border-white dark:!border-zinc-950 !-bottom-1"
+        title="Output"
+        className="!w-2 !h-2 !rounded-full !bg-zinc-200 dark:!bg-zinc-500 !border-2 !border-white dark:!border-zinc-950 !-bottom-1 hover:!scale-150 !transition-transform"
       />
 
-      {/* Left Handle */}
+      {/* Left Handle - Input */}
       <Handle
         type="target"
         position={Position.Left}
         id="left"
-        className="!w-2 !h-2 !rounded-full !bg-zinc-300 dark:!bg-zinc-700 !border-2 !border-white dark:!border-zinc-950"
+        title="Input"
+        className="!w-2 !h-2 !rounded-full !bg-zinc-300 dark:!bg-zinc-700 !border-2 !border-white dark:!border-zinc-950 hover:!scale-150 !transition-transform"
       />
 
-      {/* Right Handle */}
+      {/* Right Handle - Output */}
       <Handle
         type="source"
         position={Position.Right}
         id="right"
-        className="!w-2 !h-2 !rounded-full !bg-zinc-300 dark:!bg-zinc-700 !border-2 !border-white dark:!border-zinc-950"
+        title="Output"
+        className="!w-2 !h-2 !rounded-full !bg-zinc-300 dark:!bg-zinc-700 !border-2 !border-white dark:!border-zinc-950 hover:!scale-150 !transition-transform"
       />
     </div>
   );

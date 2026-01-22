@@ -143,17 +143,17 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
             Import Diagram
           </h2>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         </div>
 
@@ -169,15 +169,15 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
               'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
               dragActive
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
+                : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600'
             )}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
+            <Upload className="w-12 h-12 mx-auto mb-4 text-zinc-400" />
+            <p className="text-zinc-700 dark:text-zinc-300 font-medium mb-1">
               Drop a file here or click to browse
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
               Supports JSON and Markdown formats
             </p>
             <input
@@ -191,18 +191,18 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
 
           {/* File Info */}
           {fileName && (
-            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
               {fileFormat === 'json' ? (
                 <FileJson className="w-5 h-5 text-blue-500" />
               ) : (
                 <FileText className="w-5 h-5 text-purple-500" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
                   {fileName}
                 </p>
                 {fileFormat && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {fileFormat} format detected
                   </p>
                 )}
@@ -273,13 +273,13 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
           {/* Import Options */}
           {fileContent && (
             <div className="space-y-3 pt-2">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Import Options
               </h4>
 
               {/* Import Mode */}
               <div className="space-y-2">
-                <label className="text-xs text-gray-600 dark:text-gray-400">
+                <label className="text-xs text-zinc-600 dark:text-zinc-400">
                   Import Mode
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -291,14 +291,14 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
                         'px-3 py-2 text-sm rounded-lg border transition-colors',
                         importMode === mode
                           ? 'bg-blue-500 text-white border-blue-500'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                          : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-600 hover:border-zinc-400'
                       )}
                     >
                       {mode.charAt(0).toUpperCase() + mode.slice(1)}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {importMode === 'replace' && 'Replace current diagram completely'}
                   {importMode === 'merge' && 'Merge with current diagram (creates new IDs)'}
                   {importMode === 'append' && 'Add to current diagram (keeps original IDs)'}
@@ -311,9 +311,9 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
                   type="checkbox"
                   checked={includeViewport}
                   onChange={(e) => setIncludeViewport(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                  className="w-4 h-4 rounded border-zinc-300 text-blue-500 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-sm text-zinc-700 dark:text-zinc-300">
                   Include viewport position and zoom
                 </span>
               </label>
@@ -322,10 +322,10 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-200 dark:border-zinc-800">
           <button
             onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -336,7 +336,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
               'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               canImport
                 ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+                : 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-500 cursor-not-allowed'
             )}
           >
             Import

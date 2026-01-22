@@ -63,7 +63,14 @@ function validateNode(node: any, index: number): ValidationError[] {
   // Validate architecture node
   if (node.type === 'architecture') {
     const validTypes: ArchitectureNodeType[] = [
-      'service', 'database', 'queue', 'cache', 'gateway', 'external', 'storage', 'client'
+      // Core
+      'service', 'database', 'queue', 'cache', 'gateway', 'external', 'storage', 'client',
+      // Tier 1: Cloud Infrastructure
+      'lambda', 'loadbalancer', 'cdn', 'auth', 'container', 'dns',
+      // Tier 2: AI/ML
+      'llm', 'vectordb', 'mlpipeline', 'embedding',
+      // Tier 3: Cloud Services
+      'secrets', 'eventbus', 'datalake', 'search', 'notification',
     ];
     
     if (!node.data.type || !validTypes.includes(node.data.type)) {
@@ -161,7 +168,16 @@ function validateEdge(edge: any, index: number, nodeIds: Set<string>): Validatio
   // Validate protocol if present
   if (edge.data?.protocol) {
     const validProtocols: EdgeProtocol[] = [
-      'http', 'https', 'grpc', 'websocket', 'tcp', 'udp', 'amqp', 'kafka', 'rabbitmq'
+      // Standard
+      'http', 'grpc', 'graphql', 'websocket', 'tcp',
+      // Messaging
+      'amqp', 'rabbitmq', 'kafka', 'eventbridge', 'sns',
+      // Data
+      'sql', 'redis', 's3', 'vector', 'search',
+      // Auth/DNS
+      'oauth', 'dns',
+      // AI/ML
+      'inference',
     ];
     
     if (!validProtocols.includes(edge.data.protocol)) {

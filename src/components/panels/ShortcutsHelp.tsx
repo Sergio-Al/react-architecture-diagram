@@ -42,6 +42,33 @@ export function ShortcutsHelp({ onClose }: ShortcutsHelpProps) {
                   <Shortcut keys={['N']} description="Add Comment" />
                 </Section>
 
+                {/* Quick Add Cloud Nodes */}
+                <Section title="Cloud Infrastructure">
+                  <Shortcut keys={['F']} description="Add Lambda" />
+                  <Shortcut keys={['B']} description="Add Load Balancer" />
+                  <Shortcut keys={['Y']} description="Add CDN" />
+                  <Shortcut keys={['A']} description="Add Auth Provider" />
+                  <Shortcut keys={['P']} description="Add Container" />
+                  <Shortcut keys={['Z']} description="Add DNS" />
+                </Section>
+
+                {/* Quick Add AI/ML Nodes */}
+                <Section title="AI/ML">
+                  <Shortcut keys={['M']} description="Add LLM" />
+                  <Shortcut keys={['X']} description="Add Vector DB" />
+                  <Shortcut keys={['W']} description="Add ML Pipeline" />
+                  <Shortcut keys={['I']} description="Add Embedding" />
+                </Section>
+
+                {/* Quick Add Cloud Services */}
+                <Section title="Cloud Services">
+                  <Shortcut keys={['K']} description="Add Secrets" />
+                  <Shortcut keys={['U']} description="Add Event Bus" />
+                  <Shortcut keys={['J']} description="Add Data Lake" />
+                  <Shortcut keys={['R']} description="Add Search" />
+                  <Shortcut keys={['O']} description="Add Notification" />
+                </Section>
+
                 {/* Quick Add Groups */}
                 <Section title="Quick Add Groups">
                   <Shortcut keys={['Shift', 'V']} description="Add VPC" />
@@ -69,6 +96,23 @@ export function ShortcutsHelp({ onClose }: ShortcutsHelpProps) {
                 {/* Layout */}
                 <Section title="Layout">
                   <Shortcut keys={['⌘', 'L']} description="Auto-layout" />
+                </Section>
+
+                {/* Connections */}
+                <Section title="Connections">
+                  <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-sky-400 dark:bg-sky-500 border-2 border-white dark:border-zinc-800"></span>
+                      <span>Input handles (Top, Left)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-amber-400 dark:bg-amber-500 border-2 border-white dark:border-zinc-800"></span>
+                      <span>Output handles (Bottom, Right)</span>
+                    </div>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500 pt-1">
+                      Drag from output to input to create connections. Protocol auto-selects based on target node type.
+                    </p>
+                  </div>
                 </Section>
               </div>
             </div>

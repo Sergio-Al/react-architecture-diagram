@@ -392,6 +392,69 @@ export function DiagramEditor() {
             event.preventDefault();
             addNodeAtCenter('comment');
             return;
+          // Tier 1: Cloud Infrastructure shortcuts
+          case 'f':
+            event.preventDefault();
+            addNodeAtCenter('lambda');
+            return;
+          case 'b':
+            event.preventDefault();
+            addNodeAtCenter('loadbalancer');
+            return;
+          case 'y':
+            event.preventDefault();
+            addNodeAtCenter('cdn');
+            return;
+          case 'a':
+            event.preventDefault();
+            addNodeAtCenter('auth');
+            return;
+          case 'p':
+            event.preventDefault();
+            addNodeAtCenter('container');
+            return;
+          case 'z':
+            event.preventDefault();
+            addNodeAtCenter('dns');
+            return;
+          // Tier 2: AI/ML shortcuts
+          case 'm':
+            event.preventDefault();
+            addNodeAtCenter('llm');
+            return;
+          case 'x':
+            event.preventDefault();
+            addNodeAtCenter('vectordb');
+            return;
+          case 'w':
+            event.preventDefault();
+            addNodeAtCenter('mlpipeline');
+            return;
+          case 'i':
+            event.preventDefault();
+            addNodeAtCenter('embedding');
+            return;
+          // Tier 3: Cloud Services shortcuts
+          case 'k':
+            event.preventDefault();
+            addNodeAtCenter('secrets');
+            return;
+          case 'u':
+            event.preventDefault();
+            addNodeAtCenter('eventbus');
+            return;
+          case 'j':
+            event.preventDefault();
+            addNodeAtCenter('datalake');
+            return;
+          case 'r':
+            event.preventDefault();
+            addNodeAtCenter('search');
+            return;
+          case 'o':
+            event.preventDefault();
+            addNodeAtCenter('notification');
+            return;
         }
       }
 

@@ -7,10 +7,12 @@ import { useState } from 'react';
 
 // Group configuration for node categories with shortcuts
 const NODE_CATEGORIES = {
-  'Compute & Services': ['service', 'gateway'] as ArchitectureNodeType[],
-  'Data Store': ['database', 'cache', 'storage'] as ArchitectureNodeType[],
-  'Messaging': ['queue'] as ArchitectureNodeType[],
-  'External': ['external', 'client'] as ArchitectureNodeType[],
+  'Compute & Services': ['service', 'gateway', 'lambda', 'loadbalancer', 'container'] as ArchitectureNodeType[],
+  'Data Store': ['database', 'cache', 'storage', 'datalake'] as ArchitectureNodeType[],
+  'Messaging': ['queue', 'eventbus', 'notification'] as ArchitectureNodeType[],
+  'AI/ML': ['llm', 'vectordb', 'mlpipeline', 'embedding'] as ArchitectureNodeType[],
+  'Cloud Services': ['secrets', 'search'] as ArchitectureNodeType[],
+  'External': ['external', 'client', 'cdn', 'auth', 'dns'] as ArchitectureNodeType[],
 };
 
 // Keyboard shortcuts for nodes
@@ -23,6 +25,24 @@ const NODE_SHORTCUTS: Record<ArchitectureNodeType, string> = {
   external: 'E',
   storage: 'T',
   client: 'L',
+  // Tier 1: Cloud Infrastructure
+  lambda: 'F',
+  loadbalancer: 'B',
+  cdn: 'Y',
+  auth: 'A',
+  container: 'P',
+  dns: 'Z',
+  // Tier 2: AI/ML
+  llm: 'M',
+  vectordb: 'X',
+  mlpipeline: 'W',
+  embedding: 'I',
+  // Tier 3: Cloud Services
+  secrets: 'K',
+  eventbus: 'U',
+  datalake: 'J',
+  search: 'R',
+  notification: 'O',
 };
 
 // Keyboard shortcuts for groups
@@ -129,12 +149,21 @@ export function NodePalette() {
               {category}
             </h3>
             {category === 'Compute & Services' ? (
+              // Grid layout for compute nodes (more visual prominence)
               <div className="grid grid-cols-2 gap-2">
                 {types.map((type) => (
                   <GridDraggableNode key={type} type={type} />
                 ))}
               </div>
+            ) : category === 'External' ? (
+              // List layout for external services (detailed descriptions)
+              <div className="space-y-2">
+                {types.map((type) => (
+                  <ListDraggableNode key={type} type={type} />
+                ))}
+              </div>
             ) : (
+              // List layout for data store and messaging
               <div className="space-y-2">
                 {types.map((type) => (
                   <ListDraggableNode key={type} type={type} />

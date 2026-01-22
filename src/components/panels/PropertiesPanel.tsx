@@ -570,12 +570,34 @@ export function PropertiesPanel() {
                   onKeyDown={(e) => e.stopPropagation()}
                   className="w-full appearance-none bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
                 >
-                  <option value="http">HTTP/REST</option>
-                  <option value="grpc">gRPC</option>
-                  <option value="websocket">WebSocket</option>
-                  <option value="tcp">TCP</option>
-                  <option value="amqp">AMQP</option>
-                  <option value="kafka">Kafka</option>
+                  <optgroup label="Standard">
+                    <option value="http">HTTP/REST</option>
+                    <option value="grpc">gRPC</option>
+                    <option value="graphql">GraphQL</option>
+                    <option value="websocket">WebSocket</option>
+                    <option value="tcp">TCP</option>
+                  </optgroup>
+                  <optgroup label="Messaging">
+                    <option value="amqp">AMQP</option>
+                    <option value="rabbitmq">RabbitMQ</option>
+                    <option value="kafka">Kafka</option>
+                    <option value="eventbridge">EventBridge</option>
+                    <option value="sns">SNS/Push</option>
+                  </optgroup>
+                  <optgroup label="Data">
+                    <option value="sql">SQL/Database</option>
+                    <option value="redis">Redis</option>
+                    <option value="s3">S3/Blob</option>
+                    <option value="vector">Vector Search</option>
+                    <option value="search">Search</option>
+                  </optgroup>
+                  <optgroup label="Auth &amp; DNS">
+                    <option value="oauth">OAuth/OIDC</option>
+                    <option value="dns">DNS</option>
+                  </optgroup>
+                  <optgroup label="AI/ML">
+                    <option value="inference">AI Inference</option>
+                  </optgroup>
                 </select>
                 <ChevronDownIcon className="absolute right-2 top-2 w-3 h-3 text-zinc-500 pointer-events-none" />
               </div>
