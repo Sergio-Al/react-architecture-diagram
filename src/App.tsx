@@ -3,13 +3,14 @@ import { DiagramEditor } from '@/components/DiagramEditor';
 import { NodePalette } from '@/components/panels/NodePalette';
 import { PropertiesPanel } from '@/components/panels/PropertiesPanel';
 import { Navbar } from '@/components/Navbar';
+import { ToastContainer } from '@/components/ui/Toast';
 import { useThemeStore } from '@/store/themeStore';
 import { useUIStore } from '@/store/uiStore';
 import { useEffect } from 'react';
 
 function App() {
   const theme = useThemeStore((state) => state.theme);
-  const { leftPanelVisible, rightPanelVisible } = useUIStore();
+  const { leftPanelVisible, rightPanelVisible, toasts, removeToast } = useUIStore();
 
   // Apply theme on mount and when it changes
   useEffect(() => {
@@ -43,6 +44,9 @@ function App() {
           {/* Right Sidebar: Properties */}
           {rightPanelVisible && <PropertiesPanel />}
         </main>
+
+        {/* Toast Notifications */}
+        <ToastContainer toasts={toasts} onClose={removeToast} />
       </div>
     </ReactFlowProvider>
   );

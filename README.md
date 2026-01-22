@@ -31,7 +31,9 @@ Define service architectures with protocol-aware connections, data contract defi
 - **Multi-Select** — Box selection and Shift+click for multiple items
 - **Copy/Paste** — Full clipboard support with Cmd+C/V
 - **Collapsible Groups** — Hide/show group contents for cleaner views
-- **Export Options** — PNG, SVG, JSON formats + export selected only
+- **Export Options** — PNG, SVG, JSON, Markdown, PDF + export selected only
+- **Import/Export** — Smart import with validation, supports JSON and Markdown formats
+- **Import Modes** — Replace, merge, or append diagrams with conflict resolution
 - **Auto-Save** — Persists to localStorage automatically
 - **Undo/Redo** — Full history support
 - **Dark/Light Mode** — Theme toggle with system preference support

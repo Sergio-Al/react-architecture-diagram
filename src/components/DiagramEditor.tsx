@@ -20,9 +20,11 @@ import {
   ArrowDownTrayIcon,
   DocumentDuplicateIcon,
   ClipboardDocumentIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
+import { ImportDialog } from '@/components/ui/ImportDialog';
 
 export function DiagramEditor() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null!);
@@ -31,6 +33,7 @@ export function DiagramEditor() {
   const [panMode, setPanMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   
   const {
     nodes,
@@ -623,8 +626,22 @@ export function DiagramEditor() {
         >
           <span className="text-xs font-semibold">?</span>
         </button>
+        <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 my-auto mx-1" />
+        <button
+          onClick={() => setShowImportDialog(true)}
+          className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+          title="Import Diagram"
+        >
+          <ArrowUpTrayIcon className="w-4 h-4" />
+        </button>
       </div>
 
+
+      {/* Import Dialog */}
+      <ImportDialog 
+        isOpen={showImportDialog} 
+        onClose={() => setShowImportDialog(false)} 
+      />
       {/* Shortcuts Help Modal */}
       {showShortcuts && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowShortcuts(false)}>

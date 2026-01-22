@@ -5,6 +5,23 @@ import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
 import { STORAGE_KEY } from '@/constants';
 import pako from 'pako';
 import { Node } from '@xyflow/react';
+import { SCHEMA_VERSION } from './import';
+
+export interface ExportOptions {
+  includeViewport?: boolean;
+  includeComments?: boolean;
+  includeMetadata?: boolean;
+  prettyPrint?: boolean;
+}
+
+interface VersionedDiagramData extends DiagramData {
+  version?: string;
+  exportedAt?: string;
+  metadata?: {
+    appName: string;
+    appVersion: string;
+  };
+}
 
 // Get the React Flow viewport element
 function getReactFlowElement(): HTMLElement | null {
@@ -289,8 +306,41 @@ export function exportAsMarkdown(data: DiagramData): void {
 }
 
 // Export as JSON
-export function exportAsJson(data: DiagramData): void {
-  const json = JSON.stringify(data, null, 2);
+export function exportAsJson(data: DiagramData, options: ExportOptions = {}): void {
+  const {
+    includeViewport = true,
+    includeComments = true,
+    includeMetadata = true,
+    prettyPrint = true,
+  } = options;
+
+  // Create versioned data
+  let exportData: VersionedDiagramData = { ...data };
+
+  // Add version and metadata
+  if (includeMetadata) {
+    exportData.version = SCHEMA_VERSION;
+    exportData.exportedAt = new Date().toISOString();
+    exportData.metadata = {
+      appName: 'Architecture Flow Designer',
+      appVersion: '1.0.0',
+    };
+  }
+
+  // Remove viewport if not requested
+  if (!includeViewport) {
+    delete exportData.viewport;
+  }
+
+  // Filter out comments if not requested
+  if (!includeComments) {
+    exportData.nodes = exportData.nodes.filter(node => node.type !== 'comment');
+  }
+
+  const json = prettyPrint 
+    ? JSON.stringify(exportData, null, 2)
+    : JSON.stringify(exportData);
+    
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
