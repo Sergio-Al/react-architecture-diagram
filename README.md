@@ -17,15 +17,29 @@ Define service architectures with protocol-aware connections, data contract defi
 
 ### Core Diagramming
 - **Drag & Drop Interface** — Add components from the palette to the canvas
-- **8 Node Types** — Services, databases, queues, caches, gateways, storage, clients, external APIs
+- **20+ Node Types** — Services, databases, queues, caches, gateways, storage, clients, and more
+- **Cloud Infrastructure** — Lambda, Load Balancer, CDN, Auth Provider, Container, DNS
+- **AI/ML Components** — LLM, Vector DB, ML Pipeline, Embedding
+- **Cloud Services** — Secrets Manager, Event Bus, Data Lake, Search, Notifications
 - **Group Containers** — Organize with VPCs, Clusters, Regions, and Subnets
 - **Auto-Layout** — Dagre.js automatic arrangement (Top-to-Bottom, Left-to-Right)
 
 ### Data Flow & Contracts
-- **Protocol-Aware Edges** — HTTP, gRPC, WebSocket, AMQP, Kafka, TCP with visual differentiation
+- **17 Protocol Types** — HTTP, gRPC, GraphQL, WebSocket, TCP, and messaging protocols
+- **Messaging Protocols** — AMQP, RabbitMQ, Kafka, EventBridge, SNS
+- **Data Protocols** — SQL, Redis, S3/Blob, Vector Search, Search
+- **Auth & DNS** — OAuth/OIDC, DNS protocols
+- **AI/ML Protocols** — AI Inference with animated connections
 - **Data Contracts** — Define JSON, Protobuf, Avro, XML schemas directly on edges
 - **Animated Flow** — Protocol-colored flowing animations showing data movement
 - **Schema Labels** — Edge labels show protocol + schema name (e.g., `AMQP • TaskCreatedEvent`)
+
+### AI Integration (OpenAI)
+- **Architecture Analysis** — AI-powered review with scoring and recommendations
+- **Connection Suggestions** — Smart protocol recommendations based on node types
+- **Documentation Generation** — Auto-generate Markdown documentation
+- **Secure Key Storage** — API keys stored locally, never sent to servers
+- **Settings Panel** — Configure provider, model, and test connections
 
 ### Productivity
 - **Multi-Select** — Box selection and Shift+click for multiple items
@@ -90,14 +104,33 @@ npm run preview
 ### Nodes
 | Type | Description |
 |------|-------------|
+| **Core** | |
 | Service | Microservice or API component |
 | Database | SQL/NoSQL data storage |
 | Queue | Message queue (RabbitMQ, Kafka, SQS) |
 | Cache | In-memory store (Redis, Memcached) |
-| Gateway | API Gateway or Load Balancer |
+| Gateway | API Gateway |
 | External | Third-party service |
 | Storage | Object storage (S3, Azure Blob) |
 | Client | Web, mobile, or desktop app |
+| **Cloud Infrastructure** | |
+| Lambda | Serverless function |
+| Load Balancer | Traffic distribution |
+| CDN | Edge delivery network |
+| Auth Provider | Identity & access management |
+| Container | Docker/Pod |
+| DNS | Domain routing |
+| **AI/ML** | |
+| LLM | Large language model |
+| Vector DB | Embeddings store |
+| ML Pipeline | Training/inference pipeline |
+| Embedding | Vector encoder |
+| **Cloud Services** | |
+| Secrets | Secrets manager |
+| Event Bus | Event broker |
+| Data Lake | Big data storage |
+| Search | Search engine |
+| Notification | Push/alert service |
 
 ### Groups
 | Type | Description |
@@ -108,14 +141,26 @@ npm run preview
 | Subnet | Network subnet |
 
 ### Edge Protocols
-| Protocol | Style |
-|----------|-------|
-| HTTP/HTTPS | Solid blue |
-| gRPC | Dashed green |
-| WebSocket | Dashed purple |
-| AMQP/RabbitMQ | Dotted amber |
-| Kafka | Dotted red |
-| TCP | Thick cyan |
+| Protocol | Style | Group |
+|----------|-------|-------|
+| HTTP/REST | Solid blue | Standard |
+| gRPC | Dashed green | Standard |
+| GraphQL | Solid pink | Standard |
+| WebSocket | Dashed purple, animated | Standard |
+| TCP | Thick cyan | Standard |
+| AMQP | Dashed amber, animated | Messaging |
+| RabbitMQ | Dashed amber, animated | Messaging |
+| Kafka | Dashed red, animated | Messaging |
+| EventBridge | Dashed orange, animated | Messaging |
+| SNS/Push | Dashed rose, animated | Messaging |
+| SQL/Database | Solid yellow | Data |
+| Redis | Dashed red | Data |
+| S3/Blob | Solid emerald | Data |
+| Vector Search | Dashed teal | Data |
+| Search | Dashed amber | Data |
+| OAuth/OIDC | Dashed violet | Auth |
+| DNS | Dashed lime | Auth |
+| AI Inference | Dashed fuchsia, animated | AI/ML |
 
 ### Data Contract Formats
 | Format | Description |
@@ -135,6 +180,7 @@ npm run preview
 - **Zustand** - State management
 - **Tailwind CSS v4** - Styling
 - **Vite** - Build tool
+- **OpenAI SDK** - AI integration (client-side)
 - **html-to-image** - Export functionality
 - **jsPDF** - PDF generation
 
@@ -145,8 +191,11 @@ src/
 ├── components/
 │   ├── nodes/           # Custom node components
 │   ├── edges/           # Custom edge components
-│   ├── panels/          # Sidebar panels
+│   ├── panels/          # Sidebar panels (including SettingsPanel)
 │   └── ui/              # Reusable UI components
+├── services/
+│   └── ai/              # AI provider integrations
+│       └── providers/   # OpenAI provider implementation
 ├── hooks/               # Custom React hooks
 ├── store/               # Zustand store
 ├── types/               # TypeScript definitions
