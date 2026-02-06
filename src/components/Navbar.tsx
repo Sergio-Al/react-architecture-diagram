@@ -17,7 +17,8 @@ import {
   Squares2X2Icon,
   RectangleStackIcon,
   SparklesIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  HeartIcon,
 } from '@heroicons/react/24/outline';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -31,16 +32,21 @@ import {
   copyShareableLink 
 } from '@/utils/export';
 import { SettingsPanel } from '@/components/panels/SettingsPanel';
+import { ExportPreviewDialog } from '@/components/ui/ExportPreviewDialog';
+import { ArchitectureNodeData } from '@/types';
 
 export function Navbar() {
-  const { undo, redo, canUndo, canRedo, exportDiagram, applyAutoLayout } = useDiagramStore();
+  const { undo, redo, canUndo, canRedo, exportDiagram, applyAutoLayout, nodes, runAllHealthChecks, healthCheckResults } = useDiagramStore();
   const { theme, setTheme } = useThemeStore();
-  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel } = useUIStore();
+  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel, addToast } = useUIStore();
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exportPreviewOpen, setExportPreviewOpen] = useState(false);
+  const [selectedExportFormat, setSelectedExportFormat] = useState<'png' | 'svg' | 'pdf' | 'json' | 'markdown'>('png');
+  const [isTestingHealth, setIsTestingHealth] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const layoutDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -58,33 +64,10 @@ export function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleExport = async (type: 'png' | 'svg' | 'pdf' | 'markdown' | 'json') => {
-    setIsExporting(true);
+  const handleExport = (type: 'png' | 'svg' | 'pdf' | 'markdown' | 'json') => {
+    setSelectedExportFormat(type);
     setExportDropdownOpen(false);
-    
-    try {
-      switch (type) {
-        case 'png':
-          await exportAsPng();
-          break;
-        case 'svg':
-          await exportAsSvg();
-          break;
-        case 'pdf':
-          await exportAsPdf();
-          break;
-        case 'markdown':
-          exportAsMarkdown(exportDiagram());
-          break;
-        case 'json':
-          exportAsJson(exportDiagram());
-          break;
-      }
-    } catch (error) {
-      console.error('Export failed:', error);
-    } finally {
-      setIsExporting(false);
-    }
+    setExportPreviewOpen(true);
   };
 
   const handleShareLink = async () => {
@@ -100,6 +83,58 @@ export function Navbar() {
   const handleLayout = (direction: 'TB' | 'LR') => {
     applyAutoLayout(direction);
     setLayoutDropdownOpen(false);
+  };
+
+  const handleTestHealth = async () => {
+    // Count nodes with health check URLs
+    const healthCheckNodes = nodes.filter(
+      n => n.type === 'architecture' && (n.data as ArchitectureNodeData).healthCheckUrl
+    );
+
+    if (healthCheckNodes.length === 0) {
+      addToast({
+        type: 'warning',
+        title: 'No health checks configured',
+        message: 'Add health check URLs to nodes in the Properties panel',
+        duration: 4000,
+      });
+      return;
+    }
+
+    setIsTestingHealth(true);
+    
+    try {
+      await runAllHealthChecks();
+      
+      // Count results
+      const healthyCount = Object.values(healthCheckResults).filter(r => r.status === 'healthy').length;
+      const totalCount = healthCheckNodes.length;
+      
+      if (healthyCount === totalCount) {
+        addToast({
+          type: 'success',
+          title: `All ${totalCount} services healthy ✓`,
+          duration: 4000,
+        });
+      } else {
+        const unhealthyCount = totalCount - healthyCount;
+        addToast({
+          type: 'error',
+          title: `${unhealthyCount}/${totalCount} services unhealthy`,
+          message: 'Check the Properties panel for details',
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'Health check failed',
+        message: 'An unexpected error occurred',
+        duration: 4000,
+      });
+    } finally {
+      setIsTestingHealth(false);
+    }
   };
 
   const cycleTheme = () => {
@@ -273,6 +308,16 @@ export function Navbar() {
           )}
         </div>
 
+        {/* Test Health Button */}
+        <button 
+          onClick={handleTestHealth}
+          disabled={isTestingHealth}
+          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Test all health checks"
+        >
+          <HeartIcon className={`w-3.5 h-3.5 ${isTestingHealth ? 'animate-pulse' : ''}`} />
+        </button>
+
         {/* AI Settings */}
         <button 
           onClick={() => setSettingsOpen(true)}
@@ -310,6 +355,13 @@ export function Navbar() {
 
       {/* Settings Modal */}
       <SettingsPanel isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      
+      {/* Export Preview Modal */}
+      <ExportPreviewDialog 
+        isOpen={exportPreviewOpen} 
+        onClose={() => setExportPreviewOpen(false)}
+        initialFormat={selectedExportFormat}
+      />
     </header>
   );
 }

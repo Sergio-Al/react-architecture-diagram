@@ -47,6 +47,7 @@ export type ArchitectureNodeData = {
   status?: NodeStatus;
   metadata?: Record<string, string>;
   parentId?: string; // For grouping - reference to parent group
+  healthCheckUrl?: string; // Health check endpoint URL
 } & Record<string, unknown>;
 
 // Data structure for group nodes

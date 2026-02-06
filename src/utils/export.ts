@@ -23,9 +23,75 @@ interface VersionedDiagramData extends DiagramData {
   };
 }
 
+export interface ExportStats {
+  nodeCount: number;
+  edgeCount: number;
+  groupCount: number;
+}
+
 // Get the React Flow viewport element
 function getReactFlowElement(): HTMLElement | null {
   return document.querySelector('.react-flow__viewport');
+}
+
+// Get export statistics
+export function getExportStats(data: DiagramData): ExportStats {
+  const nodeCount = data.nodes.filter(n => n.type !== 'group' && n.type !== 'comment').length;
+  const groupCount = data.nodes.filter(n => n.type === 'group').length;
+  const edgeCount = data.edges.length;
+  
+  return {
+    nodeCount,
+    edgeCount,
+    groupCount,
+  };
+}
+
+// Generate PNG preview (returns data URL instead of downloading)
+export async function generatePreviewPng(backgroundColor: string, scale: number = 2): Promise<string> {
+  const reactFlowContainer = document.querySelector('.react-flow');
+  if (!reactFlowContainer) {
+    throw new Error('React Flow container not found');
+  }
+
+  const dataUrl = await toPng(reactFlowContainer as HTMLElement, {
+    backgroundColor,
+    pixelRatio: scale,
+    filter: (node: HTMLElement) => {
+      // Filter out selection indicators and nodesselection elements
+      if (node.classList) {
+        return !node.classList.contains('react-flow__nodesselection') &&
+               !node.classList.contains('react-flow__selectionpane') &&
+               !node.classList.contains('react-flow__selection');
+      }
+      return true;
+    },
+  });
+
+  return dataUrl;
+}
+
+// Generate SVG preview (returns data URL instead of downloading)
+export async function generatePreviewSvg(backgroundColor: string): Promise<string> {
+  const reactFlowContainer = document.querySelector('.react-flow');
+  if (!reactFlowContainer) {
+    throw new Error('React Flow container not found');
+  }
+
+  const dataUrl = await toSvg(reactFlowContainer as HTMLElement, {
+    backgroundColor,
+    filter: (node: HTMLElement) => {
+      // Filter out selection indicators and nodesselection elements
+      if (node.classList) {
+        return !node.classList.contains('react-flow__nodesselection') &&
+               !node.classList.contains('react-flow__selectionpane') &&
+               !node.classList.contains('react-flow__selection');
+      }
+      return true;
+    },
+  });
+
+  return dataUrl;
 }
 
 // Get bounding box of selected nodes
@@ -125,7 +191,7 @@ export async function exportSelectedAsPng(selectedNodes: Node[]): Promise<void> 
 }
 
 // Export as PNG
-export async function exportAsPng(): Promise<void> {
+export async function exportAsPng(backgroundColor: string = '#09090b', scale: number = 2): Promise<void> {
   const element = getReactFlowElement();
   if (!element) {
     throw new Error('Diagram element not found');
@@ -138,8 +204,17 @@ export async function exportAsPng(): Promise<void> {
   }
 
   const dataUrl = await toPng(reactFlowContainer as HTMLElement, {
-    backgroundColor: '#09090b',
-    pixelRatio: 2,
+    backgroundColor,
+    pixelRatio: scale,
+    filter: (node: HTMLElement) => {
+      // Filter out selection indicators and nodesselection elements
+      if (node.classList) {
+        return !node.classList.contains('react-flow__nodesselection') &&
+               !node.classList.contains('react-flow__selectionpane') &&
+               !node.classList.contains('react-flow__selection');
+      }
+      return true;
+    },
   });
 
   // Download
@@ -150,14 +225,23 @@ export async function exportAsPng(): Promise<void> {
 }
 
 // Export as SVG
-export async function exportAsSvg(): Promise<void> {
+export async function exportAsSvg(backgroundColor: string = '#09090b'): Promise<void> {
   const reactFlowContainer = document.querySelector('.react-flow');
   if (!reactFlowContainer) {
     throw new Error('React Flow container not found');
   }
 
   const dataUrl = await toSvg(reactFlowContainer as HTMLElement, {
-    backgroundColor: '#09090b',
+    backgroundColor,
+    filter: (node: HTMLElement) => {
+      // Filter out selection indicators and nodesselection elements
+      if (node.classList) {
+        return !node.classList.contains('react-flow__nodesselection') &&
+               !node.classList.contains('react-flow__selectionpane') &&
+               !node.classList.contains('react-flow__selection');
+      }
+      return true;
+    },
   });
 
   // Download
@@ -168,7 +252,7 @@ export async function exportAsSvg(): Promise<void> {
 }
 
 // Export as PDF
-export async function exportAsPdf(): Promise<void> {
+export async function exportAsPdf(backgroundColor: string = '#09090b', orientation: 'portrait' | 'landscape' = 'landscape'): Promise<void> {
   const reactFlowContainer = document.querySelector('.react-flow');
   if (!reactFlowContainer) {
     throw new Error('React Flow container not found');
@@ -176,13 +260,22 @@ export async function exportAsPdf(): Promise<void> {
 
   // First convert to PNG
   const dataUrl = await toPng(reactFlowContainer as HTMLElement, {
-    backgroundColor: '#09090b',
+    backgroundColor,
     pixelRatio: 2,
+    filter: (node: HTMLElement) => {
+      // Filter out selection indicators and nodesselection elements
+      if (node.classList) {
+        return !node.classList.contains('react-flow__nodesselection') &&
+               !node.classList.contains('react-flow__selectionpane') &&
+               !node.classList.contains('react-flow__selection');
+      }
+      return true;
+    },
   });
 
-  // Create PDF (landscape A4)
+  // Create PDF
   const pdf = new jsPDF({
-    orientation: 'landscape',
+    orientation,
     unit: 'mm',
     format: 'a4',
   });

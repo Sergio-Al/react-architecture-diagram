@@ -1,5 +1,5 @@
 import { useDiagramStore } from '@/store/diagramStore';
-import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG } from '@/constants';
+import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType, DataFormat, CommentNodeData, CommentColor } from '@/types';
 import { cn } from '@/lib/utils';
 import { 
@@ -7,7 +7,13 @@ import {
   TrashIcon, 
   CursorArrowRippleIcon,
   ChevronDownIcon,
-  Squares2X2Icon
+  Squares2X2Icon,
+  HeartIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationCircleIcon,
+  ArrowPathIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import { CodeEditor } from '@/components/ui/CodeEditor';
@@ -28,7 +34,11 @@ export function PropertiesPanel() {
     deleteEdge,
     addNodeToGroup,
     removeNodeFromGroup,
+    runNodeHealthCheck,
+    getNodeHealthResult,
   } = useDiagramStore();
+
+  const [isTestingHealth, setIsTestingHealth] = useState(false);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const selectedEdge = edges.find((e) => e.id === selectedEdgeId);
@@ -457,6 +467,106 @@ export function PropertiesPanel() {
                 rows={3}
                 className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors resize-none"
               />
+            </div>
+
+            {/* Health Check */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide flex items-center gap-1">
+                <HeartIcon className="w-3 h-3" />
+                Health Check URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={nodeData.healthCheckUrl || ''}
+                  onChange={(e) => updateNodeData(selectedNode.id, { healthCheckUrl: e.target.value })}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="https://api.example.com/health"
+                  className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={async () => {
+                    if (!nodeData.healthCheckUrl) return;
+                    setIsTestingHealth(true);
+                    await runNodeHealthCheck(selectedNode.id);
+                    setIsTestingHealth(false);
+                  }}
+                  disabled={!nodeData.healthCheckUrl || isTestingHealth}
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  {isTestingHealth ? (
+                    <ArrowPathIcon className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <HeartIcon className="w-3 h-3" />
+                  )}
+                  Test
+                </button>
+              </div>
+              
+              {/* Health Check Result */}
+              {(() => {
+                const healthResult = getNodeHealthResult(selectedNode.id);
+                if (!healthResult) return null;
+                
+                const statusStyle = HEALTH_STATUS_STYLES[healthResult.loading ? 'loading' : healthResult.status];
+                const StatusIcon = healthResult.loading 
+                  ? ArrowPathIcon 
+                  : healthResult.status === 'healthy' 
+                    ? CheckCircleIcon 
+                    : healthResult.status === 'unhealthy'
+                      ? XCircleIcon
+                      : ExclamationCircleIcon;
+                
+                return (
+                  <div className={cn(
+                    'mt-2 p-2 rounded border',
+                    statusStyle.bg,
+                    statusStyle.border
+                  )}>
+                    <div className="flex items-center gap-2">
+                      <StatusIcon className={cn('w-4 h-4', statusStyle.icon, healthResult.loading && 'animate-spin')} />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className={cn('text-xs font-medium', statusStyle.text)}>
+                            {healthResult.loading 
+                              ? 'Testing...' 
+                              : healthResult.status === 'healthy' 
+                                ? 'Healthy' 
+                                : healthResult.status === 'unhealthy'
+                                  ? 'Unhealthy'
+                                  : 'Error'}
+                          </span>
+                          {!healthResult.loading && (
+                            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
+                              {healthResult.latency}ms
+                            </span>
+                          )}
+                        </div>
+                        {healthResult.message && !healthResult.loading && (
+                          <p className="text-[10px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+                            {healthResult.message}
+                          </p>
+                        )}
+                        {!healthResult.loading && (
+                          <p className="text-[9px] text-zinc-500 dark:text-zinc-500 mt-0.5">
+                            {new Date(healthResult.timestamp).toLocaleTimeString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              {/* CORS Info */}
+              {nodeData.healthCheckUrl && (
+                <div className="mt-2 flex gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded">
+                  <InformationCircleIcon className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed">
+                    Health checks may fail for services without CORS headers. Best for localhost or CORS-enabled services.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Parent Group */}
