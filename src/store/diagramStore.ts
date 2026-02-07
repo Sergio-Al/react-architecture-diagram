@@ -354,8 +354,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
       }
     });
 
-    // Track which new node IDs belong to which category (before we modified parentIds)
-    const newIdsWithNewParent = new Set(childNodesWithNewParent.map(n => idMap.get(n.id)!));
+    // Track which new node IDs keep their existing parent (before we modified parentIds)
     const newIdsKeepingParent = new Set(childNodesKeepingParent.map(n => idMap.get(n.id)!));
 
     // Add new nodes and edges, deselect old ones
@@ -440,7 +439,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
 
   // Paste nodes from clipboard
   pasteNodes: (position) => {
-    const { clipboard, nodes } = get();
+    const { clipboard } = get();
     
     if (clipboard.nodes.length === 0) return;
 
@@ -572,7 +571,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
 
   // Toggle group collapse
   toggleGroupCollapse: (id) => {
-    const { nodes, edges } = get();
+    const { nodes } = get();
     const groupNode = nodes.find(n => n.id === id);
     if (!groupNode) return;
 

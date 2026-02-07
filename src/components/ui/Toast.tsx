@@ -38,6 +38,7 @@ export function Toast({ id, type, title, message, duration = 5000, onClose }: To
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [id, duration, onClose]);
 
   return (
@@ -69,7 +70,7 @@ export function Toast({ id, type, title, message, duration = 5000, onClose }: To
 }
 
 export interface ToastContainerProps {
-  toasts: ToastProps[];
+  toasts: Omit<ToastProps, 'onClose'>[];
   onClose: (id: string) => void;
 }
 

@@ -1,6 +1,6 @@
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
-import { CommentNodeData, CommentColor } from '@/types';
+import { NodeProps } from '@xyflow/react';
+import { CommentNodeData } from '@/types';
 import { COMMENT_CONFIG } from '@/constants';
 import { cn } from '@/lib/utils';
 import { useDiagramStore } from '@/store/diagramStore';

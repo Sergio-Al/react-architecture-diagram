@@ -28,7 +28,7 @@ import { ImportDialog } from '@/components/ui/ImportDialog';
 
 export function DiagramEditor() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null!);
-  const { screenToFlowPosition, zoomIn, zoomOut, getZoom, getIntersectingNodes, getViewport } = useReactFlow();
+  const { screenToFlowPosition, zoomIn, zoomOut, getZoom, getIntersectingNodes } = useReactFlow();
   const [zoom, setZoom] = useState(100);
   const [panMode, setPanMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
@@ -87,7 +87,6 @@ export function DiagramEditor() {
 
   // Helper function to add node at viewport center
   const addNodeAtCenter = useCallback((type: ArchitectureNodeType | string) => {
-    const viewport = getViewport();
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!bounds) return;
 
@@ -157,7 +156,7 @@ export function DiagramEditor() {
     };
 
     addNode(newNode);
-  }, [screenToFlowPosition, addNode, getViewport]);
+  }, [screenToFlowPosition, addNode]);
 
   // Handle drag over
   const onDragOver = useCallback((event: DragEvent) => {
@@ -320,9 +319,6 @@ export function DiagramEditor() {
         return;
       }
 
-      // Find all group nodes
-      const groupNodes = nodes.filter(n => n.type === 'group');
-      
       // Check if the node intersects with any group
       const intersectingGroups = getIntersectingNodes(node).filter(n => n.type === 'group');
       

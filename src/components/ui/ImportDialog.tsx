@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { X, Upload, FileJson, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { importDiagram, ImportOptions, detectFileFormat } from '@/utils/import';
+import { importDiagram, detectFileFormat } from '@/utils/import';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useUIStore } from '@/store/uiStore';
 import { mergeDiagramData, appendDiagramData } from '@/utils/import';

@@ -1,11 +1,48 @@
+/* Import external fonts first (must be before @import "tailwindcss") */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* Tailwind CSS v4 */
 @import "tailwindcss";
 
 /* Enable class-based dark mode for Tailwind v4 */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Theme customization using Tailwind v4 @theme directive */
+@theme {
+  /* Font family */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  /* Custom animations */
+  --animate-slide-in: slideInRight 0.3s ease-out;
+  --animate-flow: flowAnimation 0.6s linear infinite;
+  
+  /* Keyframes */
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes flowAnimation {
+    0% {
+      stroke-dashoffset: 24;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+/* CSS Custom Properties for theming */
 :root {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans);
+  
   /* Default to dark mode colors */
   --bg-primary: #09090b;
   --bg-secondary: #18181b;
@@ -79,13 +116,16 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--scrollbar-track);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
@@ -101,6 +141,7 @@ input[type=range] {
   -webkit-appearance: none;
   background: transparent;
 }
+
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   height: 16px;
@@ -111,6 +152,7 @@ input[type=range]::-webkit-slider-thumb {
   cursor: pointer;
   margin-top: -6px;
 }
+
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
   height: 4px;
@@ -191,34 +233,14 @@ input[type=range]::-webkit-slider-runnable-track {
   background: var(--handle-hover) !important;
 }
 
-/* Animation for panels */
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
+/* Animation utility classes */
 .animate-slide-in {
-  animation: slideInRight 0.3s ease-out;
+  animation: var(--animate-slide-in);
 }
 
 /* Edge flow animation - data passing effect */
-@keyframes flowAnimation {
-  0% {
-    stroke-dashoffset: 24;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
-}
-
 .animated-edge-flow {
-  animation: flowAnimation 0.6s linear infinite;
+  animation: var(--animate-flow);
 }
 
 .animated-edge-dot {

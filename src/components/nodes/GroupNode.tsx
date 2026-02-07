@@ -4,10 +4,7 @@ import { cn } from '@/lib/utils';
 import { GroupNodeData } from '@/types';
 import { GROUP_TYPES_CONFIG } from '@/constants';
 import { useDiagramStore } from '@/store/diagramStore';
-import { 
-  ChevronDownIcon,
-  ChevronRightIcon
-} from '@heroicons/react/24/outline';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
   const nodeData = data as unknown as GroupNodeData;

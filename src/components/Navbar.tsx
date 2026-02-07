@@ -9,7 +9,6 @@ import {
   PhotoIcon,
   DocumentTextIcon,
   DocumentIcon,
-  LinkIcon,
   CheckIcon,
   SunIcon,
   MoonIcon,

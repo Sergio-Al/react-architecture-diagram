@@ -2,7 +2,6 @@ import { toPng, toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { DiagramData, ArchitectureNodeData, GroupNodeData, ArchitectureEdgeData } from '@/types';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
-import { STORAGE_KEY } from '@/constants';
 import pako from 'pako';
 import { Node } from '@xyflow/react';
 import { SCHEMA_VERSION } from './import';
@@ -138,9 +137,6 @@ export async function exportSelectedAsSvg(selectedNodes: Node[]): Promise<void> 
     throw new Error('Could not calculate bounds');
   }
 
-  // Get the current transform of the viewport
-  const transform = window.getComputedStyle(reactFlowContainer).transform;
-  
   const dataUrl = await toSvg(reactFlowContainer, {
     backgroundColor: '#ffffff',
     width: bounds.width,
