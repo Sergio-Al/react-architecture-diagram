@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useDiagramStore } from '@/store/diagramStore';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType, DataFormat, CommentNodeData, CommentColor } from '@/types';
