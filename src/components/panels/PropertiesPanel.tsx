@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon as IconifyIcon } from '@iconify/react';
 import { useDiagramStore } from '@/store/diagramStore';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType, DataFormat, CommentNodeData, CommentColor } from '@/types';
@@ -18,8 +19,11 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
+import { IconPickerDialog } from '@/components/ui/IconPickerDialog';
 
 export function PropertiesPanel() {
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+  
   const { 
     nodes, 
     edges, 
@@ -352,7 +356,15 @@ export function PropertiesPanel() {
           {/* Header Section */}
           <div className="flex items-start gap-4">
             <div className={cn('p-3 rounded-lg border', config.bgClass, config.borderClass)}>
-              <Icon className={cn('w-5 h-5', config.iconColor)} />
+              {nodeData.iconifyIcon ? (
+                <IconifyIcon 
+                  icon={nodeData.iconifyIcon} 
+                  className="w-5 h-5" 
+                  style={{ color: nodeData.iconColor || config.iconColor.replace('text-', '') }}
+                />
+              ) : (
+                <Icon className={cn('w-5 h-5', config.iconColor)} />
+              )}
             </div>
             <div>
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
@@ -402,6 +414,62 @@ export function PropertiesPanel() {
                 </select>
                 <ChevronDownIcon className="absolute right-2 top-2 w-3 h-3 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
               </div>
+            </div>
+
+            {/* Custom Icon */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Custom Icon
+              </label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={nodeData.iconifyIcon || ''}
+                    onChange={(e) => updateNodeData(selectedNode.id, { iconifyIcon: e.target.value || undefined })}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    placeholder="e.g., mdi:kubernetes, logos:docker-icon"
+                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+                  />
+                  {nodeData.iconifyIcon && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4">
+                      <IconifyIcon 
+                        icon={nodeData.iconifyIcon} 
+                        className="w-full h-full"
+                        style={{ color: nodeData.iconColor || config.iconColor.replace('text-', '') }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setIsIconPickerOpen(true)}
+                  className="px-3 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded transition-colors text-zinc-700 dark:text-zinc-300"
+                >
+                  Browse
+                </button>
+              </div>
+              {nodeData.iconifyIcon && (
+                <div className="flex gap-2">
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <label className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">
+                      Icon Color
+                    </label>
+                    <input
+                      type="color"
+                      value={nodeData.iconColor || '#000000'}
+                      onChange={(e) => updateNodeData(selectedNode.id, { iconColor: e.target.value })}
+                      className="h-8 w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded cursor-pointer"
+                    />
+                  </div>
+                  <button
+                    onClick={() => updateNodeData(selectedNode.id, { iconifyIcon: undefined, iconColor: undefined })}
+                    className="mt-4.5 px-2 py-1.5 text-[10px] font-medium bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 rounded transition-colors"
+                    title="Reset to default icon"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Technology */}
@@ -924,7 +992,21 @@ export function PropertiesPanel() {
     );
   }
 
-  return null;
+  return (
+    <>
+      {selectedNode && selectedNode.type === 'architecture' && (
+        <IconPickerDialog
+          isOpen={isIconPickerOpen}
+          onClose={() => setIsIconPickerOpen(false)}
+          onSelect={(iconId) => {
+            updateNodeData(selectedNode.id, { iconifyIcon: iconId });
+            setIsIconPickerOpen(false);
+          }}
+          currentIcon={(selectedNode.data as ArchitectureNodeData).iconifyIcon}
+        />
+      )}
+    </>
+  );
 }
 
 // Custom Toggle Switch Component

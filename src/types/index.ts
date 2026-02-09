@@ -48,6 +48,8 @@ export type ArchitectureNodeData = {
   metadata?: Record<string, string>;
   parentId?: string; // For grouping - reference to parent group
   healthCheckUrl?: string; // Health check endpoint URL
+  iconifyIcon?: string; // Custom Iconify icon ID (e.g., "mdi:kubernetes", "logos:docker-icon")
+  iconColor?: string; // Custom icon color (hex/CSS color)
 } & Record<string, unknown>;
 
 // Data structure for group nodes

@@ -1,10 +1,13 @@
 import { memo, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Icon as IconifyIcon } from '@iconify/react';
 import { cn } from '@/lib/utils';
 import { NODE_TYPES_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
 import { ArchitectureNodeData } from '@/types';
 import { useDiagramStore } from '@/store/diagramStore';
 import { HeartIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { IconPickerDialog } from '@/components/ui/IconPickerDialog';
 
 export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
   const nodeData = data as unknown as ArchitectureNodeData;
@@ -17,6 +20,9 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Icon picker state
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
   
   // Auto-focus and select text when entering edit mode
   useEffect(() => {
@@ -61,8 +67,23 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
       />
 
       {/* Icon */}
-      <div className={cn('p-2.5 rounded-lg', config.bgClass, config.borderClass, 'border')}>
-        <Icon className={cn('w-5 h-5', config.iconColor)} strokeWidth={1.5} />
+      <div 
+        className={cn('p-2.5 rounded-lg cursor-pointer nodrag nopan', config.bgClass, config.borderClass, 'border')}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          setIsIconPickerOpen(true);
+        }}
+        title="Double-click to change icon"
+      >
+        {nodeData.iconifyIcon ? (
+          <IconifyIcon 
+            icon={nodeData.iconifyIcon} 
+            className="w-5 h-5" 
+            style={{ color: nodeData.iconColor || config.iconColor.replace('text-', '') }}
+          />
+        ) : (
+          <Icon className={cn('w-5 h-5', config.iconColor)} strokeWidth={1.5} />
+        )}
       </div>
 
       {/* Label & Type */}
@@ -169,6 +190,20 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Icon Picker Dialog (via Portal) */}
+      {isIconPickerOpen && createPortal(
+        <IconPickerDialog
+          isOpen={isIconPickerOpen}
+          onClose={() => setIsIconPickerOpen(false)}
+          onSelect={(iconId) => {
+            updateNodeData(id, { iconifyIcon: iconId });
+            setIsIconPickerOpen(false);
+          }}
+          currentIcon={nodeData.iconifyIcon}
+        />,
+        document.body
       )}
     </div>
   );

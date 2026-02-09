@@ -161,7 +161,7 @@ export function Navbar() {
           <CubeIcon className="w-4.5 h-4.5" strokeWidth={2} />
         </div>
         <h1 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          ARCHITECT <span className="opacity-40 font-normal ml-1">v2.1</span>
+          ARCH/IO <span className="opacity-40 font-normal ml-1">v2.1</span>
         </h1>
       </div>
 
