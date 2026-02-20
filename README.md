@@ -4,7 +4,7 @@ A visual architecture documentation platform for designing, documenting, and com
 
 Define service architectures with protocol-aware connections, data contract definitions, and deployment boundaries. Use as living documentation for onboarding, API specs, and system reviews.
 
-![Architecture Diagram](https://img.shields.io/badge/React-18-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![React Flow](https://img.shields.io/badge/React%20Flow-12-green)
+![Architecture Diagram](https://img.shields.io/badge/React-18-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![React Flow](https://img.shields.io/badge/React%20Flow-12-green) ![GSAP](https://img.shields.io/badge/GSAP-3.12-green)
 
 ## 🎯 Use Cases
 
@@ -12,6 +12,7 @@ Define service architectures with protocol-aware connections, data contract defi
 - **📝 API Documentation** — Data contracts live alongside the diagram
 - **🔍 System Review** — Trace data flow through services
 - **📐 Architecture Design** — Plan new features with clear integration points
+- **🧪 Resilience Testing** — Simulate failures and chaos scenarios to validate architecture
 
 ## ✨ Features
 
@@ -31,8 +32,36 @@ Define service architectures with protocol-aware connections, data contract defi
 - **Auth & DNS** — OAuth/OIDC, DNS protocols
 - **AI/ML Protocols** — AI Inference with animated connections
 - **Data Contracts** — Define JSON, Protobuf, Avro, XML schemas directly on edges
-- **Animated Flow** — Protocol-colored flowing animations showing data movement
+- **Animated Flow** — GSAP-powered protocol-colored flowing animations with MotionPathPlugin
 - **Schema Labels** — Edge labels show protocol + schema name (e.g., `AMQP • TaskCreatedEvent`)
+
+### Simulation Mode (GSAP-Powered)
+- **Flow Simulation** — Animated packet traces data flow from a source node through the architecture
+  - BFS/DFS path tracing with branching support (parallel packets at fork points)
+  - Latency-proportional animation speed per edge
+  - Step-by-step debugger mode (forward/backward)
+  - Round-trip animation (request → response)
+  - Real-time stats: total hops, protocols used, path length, total latency, bottleneck detection
+- **Failure Simulation** — Mark nodes as failed and visualize cascading impact
+  - Click nodes to toggle failure state (red pulsing glow)
+  - Automatic blast radius computation (BFS downstream)
+  - Domino-effect cascade animation (level-by-level ripple)
+  - Affected nodes dimmed with grayscale; broken edges turn red
+  - Stats: failed count, affected count, impact percentage, broken edges
+- **Chaos Engineering Mode** — Automated resilience testing
+  - **Random Failure** — Probability-weighted random node failures with configurable max per round
+  - **Network Partition** — Severs ~30-50% of edges using Union-Find to split the graph into partitions
+  - Protected nodes (click to toggle, cyan "P" badge) are immune to chaos
+  - Configurable interval (1s–10s), failure probability, and max failures per round
+  - Scrollable event log with color-coded entries (failures, cascades, partitions, recoveries)
+  - Stats: rounds, total failures, MTBF, severed edges
+- **Floating Control Panel** — Bottom-center overlay with mode selector, playback controls, speed (0.25x–4x)
+- **Non-destructive** — Simulation state is ephemeral, not persisted or included in undo/redo
+
+### Node Destruction Animation
+- **Shatter/Explode Effect** — Deleted nodes explode into a 4×4 grid of fragments
+- **Clone-and-Animate** — Captures node position, clones to overlay, removes from state, then animates fragments flying outward with staggered rotation/scale/opacity
+- **Connected edges** fade out simultaneously during the shatter animation
 
 ### AI Integration (OpenAI)
 - **Architecture Analysis** — AI-powered review with scoring and recommendations
@@ -92,12 +121,13 @@ npm run preview
 | `Cmd/Ctrl + V` | Paste |
 | `Cmd/Ctrl + D` | Duplicate selected |
 | `Cmd/Ctrl + L` | Auto-layout |
-| `Delete / Backspace` | Delete selected |
+| `Delete / Backspace` | Delete selected (with shatter animation) |
 | `Cmd/Ctrl + Z` | Undo |
 | `Cmd/Ctrl + Y` | Redo |
 | `[` | Toggle left panel |
 | `]` | Toggle right panel |
 | `Shift + Click` | Add to selection |
+| `Shift + S` | Toggle simulation panel |
 
 ## 🧩 Component Types
 
@@ -179,7 +209,9 @@ npm run preview
 - **@xyflow/react** - Diagram library (React Flow v12)
 - **Zustand** - State management
 - **Tailwind CSS v4** - Styling
+- **GSAP 3.12+** - Animation engine (MotionPathPlugin for simulation)
 - **Vite** - Build tool
+- **Vitest** - Unit testing
 - **OpenAI SDK** - AI integration (client-side)
 - **html-to-image** - Export functionality
 - **jsPDF** - PDF generation
@@ -189,18 +221,46 @@ npm run preview
 ```
 src/
 ├── components/
-│   ├── nodes/           # Custom node components
-│   ├── edges/           # Custom edge components
-│   ├── panels/          # Sidebar panels (including SettingsPanel)
-│   └── ui/              # Reusable UI components
+│   ├── nodes/           # Custom node components (ArchitectureNode, GroupNode, CommentNode)
+│   ├── edges/           # Custom edge components (GSAP-animated ArchitectureEdge)
+│   ├── panels/          # Sidebar & overlay panels
+│   │   ├── NodePalette.tsx        # Draggable node palette
+│   │   ├── PropertiesPanel.tsx    # Node/edge property editor
+│   │   ├── SettingsPanel.tsx      # AI configuration
+│   │   ├── SimulationPanel.tsx    # Floating simulation control bar
+│   │   ├── SimulationStats.tsx    # Real-time simulation metrics overlay
+│   │   ├── ChaosEventLog.tsx      # Chaos mode event timeline
+│   │   └── ShortcutsHelp.tsx      # Keyboard shortcuts modal
+│   └── ui/              # Reusable UI components (Toast, ImportDialog, etc.)
+├── hooks/
+│   ├── useEdgeAnimation.ts        # GSAP edge flow animation
+│   ├── useSimulationAnimation.ts  # GSAP simulation orchestration (flow + failure)
+│   ├── useChaosSimulation.ts      # Chaos engineering interval engine
+│   ├── useDestroyAnimation.ts     # GSAP shatter/explode for node deletion
+│   └── useDragEvent.ts            # Palette drag-and-drop handler
 ├── services/
 │   └── ai/              # AI provider integrations
 │       └── providers/   # OpenAI provider implementation
-├── hooks/               # Custom React hooks
-├── store/               # Zustand store
-├── types/               # TypeScript definitions
-├── lib/                 # Utility functions
-└── constants/           # Configuration
+├── store/
+│   ├── diagramStore.ts      # Nodes, edges, clipboard, undo/redo
+│   ├── simulationStore.ts   # Simulation state (flow, failure, chaos)
+│   ├── animationStore.ts    # Pending deletion animation orchestration
+│   ├── uiStore.ts           # Panel visibility, toasts
+│   ├── themeStore.ts        # Dark/light/system theme
+│   └── aiStore.ts           # AI provider settings & cache
+├── types/
+│   ├── index.ts         # Core diagram types
+│   ├── simulation.ts    # Simulation & chaos types
+│   └── ai.ts            # AI provider types
+├── lib/
+│   ├── gsap.ts          # GSAP initialization & plugin registration
+│   └── utils.ts         # Utility functions (cn helper)
+├── utils/
+│   ├── graphTraversal.ts    # BFS path tracing, blast radius, partition (Union-Find)
+│   ├── export.ts            # Export utilities
+│   ├── import.ts            # Import utilities
+│   └── layout.ts            # Auto-layout algorithms
+└── constants/           # Configuration constants
 ```
 
 ## 🤝 Contributing
