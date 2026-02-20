@@ -7,6 +7,8 @@ import {
 import { cn } from '@/lib/utils';
 import { ArchitectureEdgeData } from '@/types';
 import { useThemeStore } from '@/store/themeStore';
+import { useSimulationStore } from '@/store/simulationStore';
+import { useEdgeAnimation } from '@/hooks/useEdgeAnimation';
 import { useEffect, useState } from 'react';
 import { PROTOCOL_CONFIG } from '@/constants';
 
@@ -44,6 +46,27 @@ export function ArchitectureEdge({
   });
 
   const isAnimated = edgeData?.animated ?? false;
+
+  // Simulation state
+  const activePathEdgeIds = useSimulationStore((s) => s.activePathEdgeIds);
+  const affectedEdgeIds = useSimulationStore((s) => s.affectedEdgeIds);
+  const severedEdgeIds = useSimulationStore((s) => s.severedEdgeIds);
+  const isSimulationRunning = useSimulationStore((s) => s.isRunning);
+  const simulationSpeed = useSimulationStore((s) => s.speed);
+
+  const isOnActivePath = activePathEdgeIds.includes(id);
+  const isBrokenEdge = affectedEdgeIds.includes(id);
+  const isSevered = severedEdgeIds.includes(id);
+
+  // Compute effective speed for edge animation
+  const effectiveSpeed = isOnActivePath && isSimulationRunning ? simulationSpeed : 1;
+
+  // GSAP edge animation hook
+  const { containerRef, dashPathRef, dotInnerRef, dotOuterRef } = useEdgeAnimation({
+    edgePath,
+    isAnimated: isAnimated && !isBrokenEdge,
+    speed: effectiveSpeed,
+  });
 
   // Theme-aware edge colors
   const edgeColors = {
@@ -105,7 +128,7 @@ export function ArchitectureEdge({
   const markerStart = isBidirectional ? `url(#arrow-${id}-start)` : undefined;
 
   return (
-    <>
+    <g data-edge-id={id}>
       {/* Arrow markers for bidirectional edges */}
       {isBidirectional && (
         <defs>
@@ -149,35 +172,68 @@ export function ArchitectureEdge({
         markerStart={markerStart}
       />
       
-      {/* Animated flow overlay - only when animated is enabled */}
+      {/* Animated flow overlay - GSAP-powered */}
       {isAnimated && (
-        <g>
+        <g ref={containerRef}>
           {/* Glow effect layer */}
           <path
             d={edgePath}
             fill="none"
-            strokeWidth={6}
-            stroke={protocolColors.primary}
+            strokeWidth={isOnActivePath ? 8 : 6}
+            stroke={isBrokenEdge ? '#ef4444' : protocolColors.primary}
             strokeLinecap="round"
-            opacity={0.3}
+            opacity={isOnActivePath ? 0.5 : 0.3}
           />
-          {/* Animated dashes */}
+          {/* Animated dashes — driven by GSAP strokeDashoffset */}
           <path
+            ref={dashPathRef}
             d={edgePath}
             fill="none"
             strokeWidth={3}
-            stroke={protocolColors.secondary}
+            stroke={isBrokenEdge ? '#f87171' : protocolColors.secondary}
             strokeDasharray="8 16"
             strokeLinecap="round"
-            className="animated-edge-flow"
           />
-          {/* Moving dot */}
-          <circle r="4" fill={protocolColors.secondary} className="animated-edge-dot">
-            <animateMotion dur="1.5s" repeatCount="indefinite" path={edgePath} />
-          </circle>
-          <circle r="6" fill={protocolColors.primary} opacity={0.4}>
-            <animateMotion dur="1.5s" repeatCount="indefinite" path={edgePath} />
-          </circle>
+          {/* Moving dot — positioned by GSAP MotionPathPlugin */}
+          <circle ref={dotInnerRef} r="4" fill={isBrokenEdge ? '#f87171' : protocolColors.secondary} className="animated-edge-dot" />
+          <circle ref={dotOuterRef} r="6" fill={isBrokenEdge ? '#ef4444' : protocolColors.primary} opacity={0.4} />
+        </g>
+      )}
+      
+      {/* Non-animated edge: still support simulation highlighting */}
+      {!isAnimated && (isOnActivePath || isBrokenEdge) && (
+        <g>
+          <path
+            d={edgePath}
+            fill="none"
+            strokeWidth={isBrokenEdge ? 4 : 6}
+            stroke={isBrokenEdge ? '#ef4444' : protocolColors.primary}
+            strokeLinecap="round"
+            opacity={0.4}
+          />
+        </g>
+      )}
+
+      {/* Severed edge overlay (network partition) */}
+      {isSevered && (
+        <g>
+          <path
+            d={edgePath}
+            fill="none"
+            strokeWidth={4}
+            stroke="#a855f7"
+            strokeDasharray="6 8"
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+          <path
+            d={edgePath}
+            fill="none"
+            strokeWidth={8}
+            stroke="#a855f7"
+            strokeLinecap="round"
+            opacity={0.15}
+          />
         </g>
       )}
       
@@ -201,6 +257,6 @@ export function ArchitectureEdge({
           </div>
         </EdgeLabelRenderer>
       )}
-    </>
+    </g>
   );
 }

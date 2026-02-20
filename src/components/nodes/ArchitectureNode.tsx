@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { NODE_TYPES_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
 import { ArchitectureNodeData } from '@/types';
 import { useDiagramStore } from '@/store/diagramStore';
+import { useSimulationStore } from '@/store/simulationStore';
+import { useAnimationStore } from '@/store/animationStore';
 import { HeartIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { IconPickerDialog } from '@/components/ui/IconPickerDialog';
 
@@ -49,15 +51,47 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
   const healthResult = getNodeHealthResult(id);
   const hasHealthCheck = !!nodeData.healthCheckUrl;
 
+  // Simulation state
+  const failedNodeIds = useSimulationStore((s) => s.failedNodeIds);
+  const activePathNodeIds = useSimulationStore((s) => s.activePathNodeIds);
+  const affectedNodeIds = useSimulationStore((s) => s.affectedNodeIds);
+  const sourceNodeId = useSimulationStore((s) => s.sourceNodeId);
+  const protectedNodeIds = useSimulationStore((s) => s.chaosConfig.protectedNodeIds);
+  const simulationMode = useSimulationStore((s) => s.mode);
+
+  const isFailed = failedNodeIds.includes(id);
+  const isOnActivePath = activePathNodeIds.includes(id);
+  const isAffected = affectedNodeIds.includes(id);
+  const isSource = sourceNodeId === id;
+  const isProtected = protectedNodeIds.includes(id) && simulationMode === 'chaos';
+
+  // Animation state — hide node during shatter animation
+  const isPendingDeletion = useAnimationStore((s) => s.isPendingDeletion(id));
+
   return (
     <div
+      data-node-id={id}
       className={cn(
         'relative flex flex-col items-center gap-2 p-3 min-w-30 rounded-xl bg-white/90 dark:bg-zinc-900/90 border backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all hover:border-zinc-400 dark:hover:border-zinc-600',
         selected
           ? 'node-selected z-20 border-zinc-500 dark:border-zinc-400'
-          : 'border-zinc-300 dark:border-zinc-800 z-10'
+          : 'border-zinc-300 dark:border-zinc-800 z-10',
+        // Simulation visual states
+        isFailed && 'border-red-500 dark:border-red-500 ring-2 ring-red-500/50',
+        isSource && 'border-emerald-500 dark:border-emerald-500 ring-2 ring-emerald-500/50',
+        isOnActivePath && !isSource && 'border-blue-400 dark:border-blue-400 ring-1 ring-blue-400/40',
+        isAffected && 'opacity-40 grayscale',
+        isProtected && 'border-cyan-400 dark:border-cyan-400 ring-2 ring-cyan-400/50',
+        isPendingDeletion && 'opacity-0 pointer-events-none'
       )}
     >
+      {/* Protected badge (chaos mode) */}
+      {isProtected && (
+        <div className="absolute -top-2 -left-2 z-20 w-5 h-5 rounded-full bg-cyan-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center shadow-sm" title="Protected from chaos">
+          <span className="text-[8px] text-white font-bold">P</span>
+        </div>
+      )}
+
       {/* Input Port - Top */}
       <Handle
         type="target"

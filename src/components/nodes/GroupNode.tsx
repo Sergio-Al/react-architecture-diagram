@@ -20,7 +20,7 @@ export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
   // Collapsed view - compact card
   if (isCollapsed) {
     return (
-      <div className="pointer-events-auto w-full h-full">
+      <div data-node-id={id} className="pointer-events-auto w-full h-full">
         <div
           className={cn(
             'w-full h-full rounded-xl border-2 transition-all duration-200 bg-white/90 dark:bg-zinc-900/90 backdrop-blur flex flex-col items-center justify-center p-4 gap-2',
@@ -70,7 +70,7 @@ export const GroupNode = memo(({ id, data, selected }: NodeProps) => {
 
   // Expanded view - container
   return (
-    <div className="pointer-events-none w-full h-full">
+    <div data-node-id={id} className="pointer-events-none w-full h-full">
       {/* Resizer - only when selected */}
       <NodeResizer 
         minWidth={200} 

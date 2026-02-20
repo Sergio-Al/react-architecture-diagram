@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon as IconifyIcon } from '@iconify/react';
 import { useDiagramStore } from '@/store/diagramStore';
+import { useAnimationStore } from '@/store/animationStore';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType, DataFormat, CommentNodeData, CommentColor } from '@/types';
 import { cn } from '@/lib/utils';
@@ -35,13 +36,14 @@ export function PropertiesPanel() {
     updateGroupData,
     toggleGroupCollapse,
     updateEdgeData,
-    deleteNode,
     deleteEdge,
     addNodeToGroup,
     removeNodeFromGroup,
     runNodeHealthCheck,
     getNodeHealthResult,
   } = useDiagramStore();
+
+  const requestDelete = useAnimationStore((s) => s.requestDelete);
 
   const [isTestingHealth, setIsTestingHealth] = useState(false);
 
@@ -188,7 +190,7 @@ export function PropertiesPanel() {
 
             {/* Delete Button */}
             <button
-              onClick={() => deleteNode(selectedNode.id)}
+              onClick={() => requestDelete(selectedNode.id)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
             >
               <TrashIcon className="w-3 h-3" />
@@ -322,7 +324,7 @@ export function PropertiesPanel() {
 
             {/* Delete Button */}
             <button
-              onClick={() => deleteNode(selectedNode.id)}
+              onClick={() => requestDelete(selectedNode.id)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-red-400 bg-red-950/50 border border-red-900/50 rounded-lg hover:bg-red-900/50 transition-colors"
             >
               <TrashIcon className="w-3 h-3" />
@@ -691,7 +693,7 @@ export function PropertiesPanel() {
 
           {/* Delete Button */}
           <button
-            onClick={() => deleteNode(selectedNode.id)}
+            onClick={() => requestDelete(selectedNode.id)}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
           >
             <TrashIcon className="w-3 h-3" />
@@ -844,6 +846,27 @@ export function PropertiesPanel() {
                 checked={edgeData.bidirectional || false}
                 onChange={(checked) => updateEdgeData(selectedEdge.id, { bidirectional: checked })}
               />
+            </div>
+
+            {/* Latency */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Latency (ms)
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={edgeData.latencyMs ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? undefined : Math.max(0, Number(e.target.value));
+                  updateEdgeData(selectedEdge.id, { latencyMs: val });
+                }}
+                onKeyDown={(e) => e.stopPropagation()}
+                placeholder="e.g. 50"
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+              />
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-600">Used by simulation for packet speed</span>
             </div>
 
             {/* Description */}

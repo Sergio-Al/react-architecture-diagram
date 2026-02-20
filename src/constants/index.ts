@@ -390,6 +390,8 @@ export const PROTOCOL_CONFIG: Record<
       strokeWidth?: number;
       animated?: boolean;
     };
+    /** Whether this protocol supports request/response semantics (false = fire-and-forget) */
+    requestResponse: boolean;
     defaultForNodes?: string[]; // Node types that should default to this protocol
   }
 > = {
@@ -401,6 +403,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'standard',
     color: { primary: '#3b82f6', secondary: '#60a5fa' }, // Blue
     style: { strokeWidth: 2 },
+    requestResponse: true,
     defaultForNodes: ['service', 'gateway', 'external', 'client'],
   },
   grpc: {
@@ -408,24 +411,28 @@ export const PROTOCOL_CONFIG: Record<
     group: 'standard',
     color: { primary: '#10b981', secondary: '#34d399' }, // Emerald
     style: { strokeDasharray: '5 5', strokeWidth: 2 },
+    requestResponse: true,
   },
   graphql: {
     label: 'GraphQL',
     group: 'standard',
     color: { primary: '#ec4899', secondary: '#f472b6' }, // Pink
     style: { strokeWidth: 2 },
+    requestResponse: true,
   },
   websocket: {
     label: 'WebSocket',
     group: 'standard',
     color: { primary: '#8b5cf6', secondary: '#a78bfa' }, // Purple
     style: { strokeDasharray: '3 3', animated: true },
+    requestResponse: true,
   },
   tcp: {
     label: 'TCP',
     group: 'standard',
     color: { primary: '#06b6d4', secondary: '#22d3ee' }, // Cyan
     style: { strokeWidth: 3 },
+    requestResponse: true,
     defaultForNodes: ['loadbalancer'],
   },
   // ═══════════════════════════════════════════════════════════
@@ -436,12 +443,14 @@ export const PROTOCOL_CONFIG: Record<
     group: 'messaging',
     color: { primary: '#f59e0b', secondary: '#fbbf24' }, // Amber
     style: { strokeDasharray: '3 3', animated: true },
+    requestResponse: false,
   },
   rabbitmq: {
     label: 'RabbitMQ',
     group: 'messaging',
     color: { primary: '#f59e0b', secondary: '#fbbf24' }, // Amber (same as AMQP)
     style: { strokeDasharray: '3 3', animated: true },
+    requestResponse: false,
     defaultForNodes: ['queue'],
   },
   kafka: {
@@ -449,12 +458,14 @@ export const PROTOCOL_CONFIG: Record<
     group: 'messaging',
     color: { primary: '#ef4444', secondary: '#f87171' }, // Red
     style: { strokeDasharray: '3 3', animated: true },
+    requestResponse: false,
   },
   eventbridge: {
     label: 'EventBridge',
     group: 'messaging',
     color: { primary: '#f97316', secondary: '#fb923c' }, // Orange
     style: { strokeDasharray: '3 3', animated: true },
+    requestResponse: false,
     defaultForNodes: ['eventbus'],
   },
   sns: {
@@ -462,6 +473,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'messaging',
     color: { primary: '#f43f5e', secondary: '#fb7185' }, // Rose
     style: { strokeDasharray: '2 4', animated: true },
+    requestResponse: false,
     defaultForNodes: ['notification'],
   },
   // ═══════════════════════════════════════════════════════════
@@ -472,6 +484,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'data',
     color: { primary: '#eab308', secondary: '#facc15' }, // Yellow
     style: { strokeWidth: 2 },
+    requestResponse: true,
     defaultForNodes: ['database'],
   },
   redis: {
@@ -479,6 +492,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'data',
     color: { primary: '#dc2626', secondary: '#f87171' }, // Red
     style: { strokeDasharray: '2 2' },
+    requestResponse: true,
     defaultForNodes: ['cache'],
   },
   s3: {
@@ -486,6 +500,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'data',
     color: { primary: '#10b981', secondary: '#34d399' }, // Emerald
     style: { strokeWidth: 2 },
+    requestResponse: true,
     defaultForNodes: ['storage', 'datalake'],
   },
   vector: {
@@ -493,6 +508,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'data',
     color: { primary: '#14b8a6', secondary: '#2dd4bf' }, // Teal
     style: { strokeDasharray: '4 2' },
+    requestResponse: true,
     defaultForNodes: ['vectordb'],
   },
   search: {
@@ -500,6 +516,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'data',
     color: { primary: '#d97706', secondary: '#fbbf24' }, // Amber
     style: { strokeDasharray: '4 2' },
+    requestResponse: true,
     defaultForNodes: ['search'],
   },
   // ═══════════════════════════════════════════════════════════
@@ -510,6 +527,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'auth',
     color: { primary: '#8b5cf6', secondary: '#a78bfa' }, // Violet
     style: { strokeDasharray: '5 3' },
+    requestResponse: true,
     defaultForNodes: ['auth'],
   },
   dns: {
@@ -517,6 +535,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'auth',
     color: { primary: '#84cc16', secondary: '#a3e635' }, // Lime
     style: { strokeDasharray: '5 3' },
+    requestResponse: true,
     defaultForNodes: ['dns', 'cdn'],
   },
   // ═══════════════════════════════════════════════════════════
@@ -527,6 +546,7 @@ export const PROTOCOL_CONFIG: Record<
     group: 'aiml',
     color: { primary: '#d946ef', secondary: '#e879f9' }, // Fuchsia
     style: { strokeDasharray: '3 3', animated: true },
+    requestResponse: true,
     defaultForNodes: ['llm', 'embedding', 'mlpipeline'],
   },
 };

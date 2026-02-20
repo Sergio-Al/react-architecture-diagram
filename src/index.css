@@ -15,7 +15,7 @@
   
   /* Custom animations */
   --animate-slide-in: slideInRight 0.3s ease-out;
-  --animate-flow: flowAnimation 0.6s linear infinite;
+  /* --animate-flow: removed — now handled by GSAP */
   
   /* Keyframes */
   @keyframes slideInRight {
@@ -29,14 +29,7 @@
     }
   }
   
-  @keyframes flowAnimation {
-    0% {
-      stroke-dashoffset: 24;
-    }
-    100% {
-      stroke-dashoffset: 0;
-    }
-  }
+  /* @keyframes flowAnimation — removed, now handled by GSAP */
 }
 
 /* CSS Custom Properties for theming */
@@ -238,10 +231,7 @@ input[type=range]::-webkit-slider-runnable-track {
   animation: var(--animate-slide-in);
 }
 
-/* Edge flow animation - data passing effect */
-.animated-edge-flow {
-  animation: var(--animate-flow);
-}
+/* Edge flow animation — now handled by GSAP (useEdgeAnimation hook) */
 
 .animated-edge-dot {
   filter: drop-shadow(0 0 4px #60a5fa);

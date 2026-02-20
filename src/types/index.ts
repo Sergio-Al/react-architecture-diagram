@@ -117,6 +117,7 @@ export type ArchitectureEdgeData = {
   async?: boolean;
   animated?: boolean;
   bidirectional?: boolean;
+  latencyMs?: number;
   description?: string;
   dataContract?: DataContract;
 } & Record<string, unknown>;

@@ -7,10 +7,13 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useDiagramStore } from '@/store/diagramStore';
+import { useSimulationStore } from '@/store/simulationStore';
+import { useAnimationStore } from '@/store/animationStore';
 import { nodeTypes } from '@/components/nodes';
 import { edgeTypes } from '@/components/edges';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNode, GroupNodeType, GroupNodeData } from '@/types';
+import { traceFlowPath } from '@/utils/graphTraversal';
 import { cn } from '@/lib/utils';
 import { 
   CursorArrowRaysIcon,
@@ -21,10 +24,15 @@ import {
   DocumentDuplicateIcon,
   ClipboardDocumentIcon,
   ArrowUpTrayIcon,
+  BoltIcon,
 } from '@heroicons/react/24/outline';
 import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
+import { SimulationPanel } from '@/components/panels/SimulationPanel';
 import { ImportDialog } from '@/components/ui/ImportDialog';
+import { useSimulationAnimation } from '@/hooks/useSimulationAnimation';
+import { useDestroyAnimation } from '@/hooks/useDestroyAnimation';
+import { useChaosSimulation } from '@/hooks/useChaosSimulation';
 
 export function DiagramEditor() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null!);
@@ -34,6 +42,21 @@ export function DiagramEditor() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showSimulationPanel, setShowSimulationPanel] = useState(false);
+  
+  // Simulation & animation hooks
+  const simulationMode = useSimulationStore((s) => s.mode);
+  const simulationSetMode = useSimulationStore((s) => s.setMode);
+  const simulationStartFlow = useSimulationStore((s) => s.startFlowSimulation);
+  const toggleNodeFailure = useSimulationStore((s) => s.toggleNodeFailure);
+  const toggleProtectedNode = useSimulationStore((s) => s.toggleProtectedNode);
+  const requestDelete = useAnimationStore((s) => s.requestDelete);
+  const requestDeleteMultiple = useAnimationStore((s) => s.requestDeleteMultiple);
+
+  // Activate GSAP simulation, destroy, and chaos animation hooks
+  useSimulationAnimation();
+  useDestroyAnimation();
+  useChaosSimulation();
   
   const {
     nodes,
@@ -238,12 +261,28 @@ export function DiagramEditor() {
     [screenToFlowPosition, addNode]
   );
 
-  // Handle node click
+  // Handle node click — with simulation mode support
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
+      // In flow simulation mode: set clicked node as source
+      if (simulationMode === 'flow') {
+        const path = traceFlowPath(nodes, edges, node.id);
+        simulationStartFlow(node.id, path);
+        return;
+      }
+      // In failure simulation mode: toggle node failure
+      if (simulationMode === 'failure') {
+        toggleNodeFailure(node.id);
+        return;
+      }
+      // In chaos mode: toggle node protection (Shift+click) or no-op
+      if (simulationMode === 'chaos') {
+        toggleProtectedNode(node.id);
+        return;
+      }
       setSelectedNode(node.id);
     },
-    [setSelectedNode]
+    [setSelectedNode, simulationMode, nodes, edges, simulationStartFlow, toggleNodeFailure, toggleProtectedNode]
   );
 
   // Handle edge click
@@ -341,7 +380,7 @@ export function DiagramEditor() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const { selectedNodeId, selectedEdgeId, deleteNode, deleteEdge, undo, redo } = useDiagramStore.getState();
+      const { selectedNodeId, selectedEdgeId, deleteEdge, undo, redo } = useDiagramStore.getState();
       
       // Ignore shortcuts when typing in input fields
       const target = event.target as HTMLElement;
@@ -492,8 +531,19 @@ export function DiagramEditor() {
         setShowShortcuts(true);
         return;
       }
+
+      // Toggle simulation panel: Shift+S
+      if (event.shiftKey && event.key === 'S' && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        setShowSimulationPanel((prev) => {
+          if (prev) simulationSetMode('idle');
+          else simulationSetMode('flow');
+          return !prev;
+        });
+        return;
+      }
       
-      // Delete - handle both single and multi-selection
+      // Delete - handle both single and multi-selection (with shatter animation)
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
         
@@ -501,9 +551,9 @@ export function DiagramEditor() {
         const selectedNodes = nodes.filter(n => n.selected);
         
         if (selectedNodes.length > 0) {
-          deleteSelectedNodes();
+          requestDeleteMultiple(selectedNodes.map(n => n.id));
         } else if (selectedNodeId) {
-          deleteNode(selectedNodeId);
+          requestDelete(selectedNodeId);
         } else if (selectedEdgeId) {
           deleteEdge(selectedEdgeId);
         }
@@ -693,6 +743,26 @@ export function DiagramEditor() {
         >
           <ArrowUpTrayIcon className="w-4 h-4" />
         </button>
+        <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 my-auto mx-1" />
+        <button
+          onClick={() => {
+            setShowSimulationPanel((v) => !v);
+            if (!showSimulationPanel) {
+              simulationSetMode('flow');
+            } else {
+              simulationSetMode('idle');
+            }
+          }}
+          className={cn(
+            'p-2 rounded-full transition-colors',
+            showSimulationPanel
+              ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+              : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          )}
+          title="Simulation Mode (Shift+S)"
+        >
+          <BoltIcon className="w-4 h-4" />
+        </button>
       </div>
 
 
@@ -741,8 +811,20 @@ export function DiagramEditor() {
           zoomOnScroll={false}
           zoomOnPinch
           multiSelectionKeyCode="Shift"
+          deleteKeyCode={null}
         />
       </div>
+
+      {/* Animation overlay for shatter/destroy effects */}
+      <div id="animation-overlay" className="fixed inset-0 pointer-events-none z-[100]" />
+
+      {/* Simulation floating panel */}
+      {showSimulationPanel && (
+        <SimulationPanel onClose={() => {
+          setShowSimulationPanel(false);
+          simulationSetMode('idle');
+        }} />
+      )}
     </div>
   );
 }

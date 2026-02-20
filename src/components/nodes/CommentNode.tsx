@@ -28,6 +28,7 @@ export const CommentNode = memo(({ data, selected, id }: NodeProps) => {
 
   return (
     <div
+      data-node-id={id}
       className={cn(
         'rounded-lg border-2 shadow-lg transition-all backdrop-blur-sm min-w-[200px] max-w-[300px]',
         colorConfig.bg,
