@@ -24,6 +24,7 @@ export function ShortcutsHelp({ onClose }: ShortcutsHelpProps) {
                 <Section title="Navigation">
                   <Shortcut keys={['V']} description="Select mode" />
                   <Shortcut keys={['H']} description="Pan/Hand mode" />
+                  <Shortcut keys={['`']} description="Laser pointer" />
                   <Shortcut keys={['[']} description="Toggle left panel" />
                   <Shortcut keys={[']']} description="Toggle right panel" />
                   <Shortcut keys={['?']} description="Show shortcuts" />

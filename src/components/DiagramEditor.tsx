@@ -30,6 +30,7 @@ import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
 import { SimulationPanel } from '@/components/panels/SimulationPanel';
 import { ImportDialog } from '@/components/ui/ImportDialog';
+import { LaserPointer } from '@/components/ui/LaserPointer';
 import { useSimulationAnimation } from '@/hooks/useSimulationAnimation';
 import { useDestroyAnimation } from '@/hooks/useDestroyAnimation';
 import { useChaosSimulation } from '@/hooks/useChaosSimulation';
@@ -43,6 +44,7 @@ export function DiagramEditor() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showSimulationPanel, setShowSimulationPanel] = useState(false);
+  const [laserMode, setLaserMode] = useState(false);
   
   // Simulation & animation hooks
   const simulationMode = useSimulationStore((s) => s.mode);
@@ -515,13 +517,22 @@ export function DiagramEditor() {
         }
       }
       
-      // Toggle modes: V for select, H for hand/pan
+      // Toggle modes: V for select, H for hand/pan, ` for laser
       if (event.key === 'v' || event.key === 'V') {
         setPanMode(false);
+        setLaserMode(false);
         return;
       }
       if (event.key === 'h' || event.key === 'H') {
         setPanMode(true);
+        setLaserMode(false);
+        return;
+      }
+      if (event.key === '`') {
+        setLaserMode((prev) => {
+          if (!prev) setPanMode(false);
+          return !prev;
+        });
         return;
       }
       
@@ -686,10 +697,10 @@ export function DiagramEditor() {
       {/* Toolbar Overlay */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-full p-1.5 flex gap-1 shadow-lg shadow-black/20 dark:shadow-black/50 z-20">
         <button 
-          onClick={() => setPanMode(false)}
+          onClick={() => { setPanMode(false); setLaserMode(false); }}
           className={cn(
             "p-2 rounded-full transition-colors",
-            !panMode 
+            !panMode && !laserMode
               ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100" 
               : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
           )}
@@ -698,7 +709,7 @@ export function DiagramEditor() {
           <CursorArrowRaysIcon className="w-4 h-4" />
         </button>
         <button 
-          onClick={() => setPanMode(true)}
+          onClick={() => { setPanMode(true); setLaserMode(false); }}
           className={cn(
             "p-2 rounded-full transition-colors",
             panMode 
@@ -708,6 +719,28 @@ export function DiagramEditor() {
           title="Pan (H)"
         >
           <HandRaisedIcon className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={() => { setLaserMode(!laserMode); setPanMode(false); }}
+          className={cn(
+            "p-2 rounded-full transition-colors",
+            laserMode
+              ? "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400" 
+              : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+          )}
+          title="Laser Pointer (`)"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <line x1="12" y1="3" x2="12" y2="6" />
+            <line x1="12" y1="18" x2="12" y2="21" />
+            <line x1="3" y1="12" x2="6" y2="12" />
+            <line x1="18" y1="12" x2="21" y2="12" />
+            <line x1="5.6" y1="5.6" x2="7.8" y2="7.8" />
+            <line x1="16.2" y1="16.2" x2="18.4" y2="18.4" />
+            <line x1="5.6" y1="18.4" x2="7.8" y2="16.2" />
+            <line x1="16.2" y1="7.8" x2="18.4" y2="5.6" />
+          </svg>
         </button>
         <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 my-auto mx-1" />
         <button 
@@ -781,7 +814,8 @@ export function DiagramEditor() {
       )}
 
       {/* React Flow Canvas */}
-      <div ref={reactFlowWrapper} className="w-full h-full">
+      <div ref={reactFlowWrapper} className={cn('w-full h-full', laserMode && 'cursor-none')}>
+        <LaserPointer active={laserMode} containerRef={reactFlowWrapper} />
         <ReactFlow
           nodes={nodes}
           edges={edges}

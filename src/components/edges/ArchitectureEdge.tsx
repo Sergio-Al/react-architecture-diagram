@@ -3,12 +3,14 @@ import {
   EdgeLabelRenderer,
   EdgeProps,
   getSmoothStepPath,
+  getBezierPath,
 } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { ArchitectureEdgeData } from '@/types';
 import { useThemeStore } from '@/store/themeStore';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useEdgeAnimation } from '@/hooks/useEdgeAnimation';
+import { useUIStore } from '@/store/uiStore';
 import { useEffect, useState } from 'react';
 import { PROTOCOL_CONFIG } from '@/constants';
 
@@ -25,6 +27,7 @@ export function ArchitectureEdge({
 }: EdgeProps) {
   const edgeData = data as ArchitectureEdgeData | undefined;
   const { theme } = useThemeStore();
+  const { edgeStyle } = useUIStore();
   const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
@@ -36,7 +39,8 @@ export function ArchitectureEdge({
     }
   }, [theme]);
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const getPath = edgeStyle === 'bezier' ? getBezierPath : getSmoothStepPath;
+  const [edgePath, labelX, labelY] = getPath({
     sourceX,
     sourceY,
     sourcePosition,

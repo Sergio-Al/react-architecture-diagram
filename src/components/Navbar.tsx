@@ -37,7 +37,7 @@ import { ArchitectureNodeData } from '@/types';
 export function Navbar() {
   const { undo, redo, canUndo, canRedo, exportDiagram, applyAutoLayout, nodes, runAllHealthChecks, healthCheckResults } = useDiagramStore();
   const { theme, setTheme } = useThemeStore();
-  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel, addToast } = useUIStore();
+  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel, edgeStyle, toggleEdgeStyle, addToast } = useUIStore();
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -191,6 +191,23 @@ export function Navbar() {
             <RectangleStackIcon className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Edge Style Toggle */}
+        <button 
+          onClick={toggleEdgeStyle}
+          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
+          title={`Edge style: ${edgeStyle === 'step' ? 'Square' : 'Curvy'} (click to toggle)`}
+        >
+          {edgeStyle === 'step' ? (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12h6v-6h4v12h6" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 6c4 0 6 12 16 12" />
+            </svg>
+          )}
+        </button>
 
         {/* Undo/Redo */}
         <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-1 gap-1">
