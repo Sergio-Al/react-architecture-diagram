@@ -26,6 +26,11 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
   // Icon picker state
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
   
+  // Tooltip hover state
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasDescription = !!nodeData.description?.trim();
+  
   // Auto-focus and select text when entering edit mode
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -84,7 +89,25 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
         isProtected && 'border-cyan-400 dark:border-cyan-400 ring-2 ring-cyan-400/50',
         isPendingDeletion && 'opacity-0 pointer-events-none'
       )}
+      onMouseEnter={() => {
+        if (hasDescription) {
+          tooltipTimeout.current = setTimeout(() => setShowTooltip(true), 400);
+        }
+      }}
+      onMouseLeave={() => {
+        if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current);
+        setShowTooltip(false);
+      }}
     >
+      {/* Description Tooltip */}
+      {showTooltip && hasDescription && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
+          <div className="relative bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 text-[11px] leading-relaxed px-3 py-2 rounded-lg shadow-lg max-w-[220px] w-max">
+            {nodeData.description}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-zinc-900 dark:border-t-zinc-100" />
+          </div>
+        </div>
+      )}
       {/* Protected badge (chaos mode) */}
       {isProtected && (
         <div className="absolute -top-2 -left-2 z-20 w-5 h-5 rounded-full bg-cyan-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center shadow-sm" title="Protected from chaos">

@@ -173,7 +173,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
       target: connection.target!,
       data: {
         protocol: defaultProtocol,
-        animated: true, // Enable animation by default
+        animated: false,
       },
     };
     
