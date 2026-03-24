@@ -31,13 +31,21 @@ import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
 import { SimulationPanel } from '@/components/panels/SimulationPanel';
 import { ImportDialog } from '@/components/ui/ImportDialog';
 import { LaserPointer } from '@/components/ui/LaserPointer';
+import { CollaboratorCursors } from '@/components/ui/CollaboratorCursors';
 import { useSimulationAnimation } from '@/hooks/useSimulationAnimation';
 import { useDestroyAnimation } from '@/hooks/useDestroyAnimation';
 import { useChaosSimulation } from '@/hooks/useChaosSimulation';
+import type { RemoteCursor } from '@/hooks/useCollaboration';
 
-export function DiagramEditor() {
+interface DiagramEditorProps {
+  remoteCursors?: RemoteCursor[];
+  sendCursorUpdate?: (cursor: { x: number; y: number } | null) => void;
+  myColor?: string;
+}
+
+export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramEditorProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null!);
-  const { screenToFlowPosition, zoomIn, zoomOut, getZoom, getIntersectingNodes } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition, zoomIn, zoomOut, getZoom, getIntersectingNodes } = useReactFlow();
   const [zoom, setZoom] = useState(100);
   const [panMode, setPanMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
@@ -814,8 +822,20 @@ export function DiagramEditor() {
       )}
 
       {/* React Flow Canvas */}
-      <div ref={reactFlowWrapper} className={cn('w-full h-full', laserMode && 'cursor-none')}>
+      <div
+        ref={reactFlowWrapper}
+        className={cn('w-full h-full', laserMode && 'cursor-none')}
+        onMouseMove={(e) => {
+          if (sendCursorUpdate) {
+            // Send in flow (world) coordinates so it's viewport-independent
+            const flowPos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+            sendCursorUpdate(flowPos);
+          }
+        }}
+        onMouseLeave={() => sendCursorUpdate?.(null)}
+      >
         <LaserPointer active={laserMode} containerRef={reactFlowWrapper} />
+        <CollaboratorCursors cursors={remoteCursors} flowToScreenPosition={flowToScreenPosition} containerRef={reactFlowWrapper} />
         <ReactFlow
           nodes={nodes}
           edges={edges}

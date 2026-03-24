@@ -2,11 +2,9 @@
 
 A visual architecture documentation platform for designing, documenting, and communicating microservice systems—capturing not just *what* components exist, but *how data flows* between them.
 
-This branch has a backend integration.
+Built with React 19, React Flow, GSAP, and a NestJS backend for multi-project workspace management and real-time collaboration.
 
-Define service architectures with protocol-aware connections, data contract definitions, and deployment boundaries. Use as living documentation for onboarding, API specs, and system reviews.
-
-![Architecture Diagram](https://img.shields.io/badge/React-18-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![React Flow](https://img.shields.io/badge/React%20Flow-12-green) ![GSAP](https://img.shields.io/badge/GSAP-3.12-green)
+![React](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![React Flow](https://img.shields.io/badge/React%20Flow-12-green) ![GSAP](https://img.shields.io/badge/GSAP-3.12-green) ![NestJS](https://img.shields.io/badge/NestJS-11-red) ![Socket.IO](https://img.shields.io/badge/Socket.IO-realtime-purple)
 
 ## 🎯 Use Cases
 
@@ -72,6 +70,21 @@ Define service architectures with protocol-aware connections, data contract defi
 - **Secure Key Storage** — API keys stored locally, never sent to servers
 - **Settings Panel** — Configure provider, model, and test connections
 
+### Real-time Collaboration
+- **Live Cursors** — See other users' cursor positions on the canvas in real time
+- **User Presence** — Colored avatar badges in the navbar show who's online
+- **Name Entry** — Users choose a display name when joining (saved to localStorage)
+- **Diagram Sync** — Node and edge changes broadcast instantly to all connected users
+- **Viewport-independent Cursors** — Cursor positions use flow-space coordinates, so they appear at the correct diagram position regardless of each user's pan/zoom
+- **Socket.IO + NestJS Gateway** — WebSocket-based transport with room-per-diagram
+
+### Multi-Project Workspace
+- **Projects & Diagrams** — Organize diagrams into projects with color-coded cards
+- **REST API** — Full CRUD backed by NestJS + PostgreSQL
+- **Breadcrumb Navigation** — Projects › Project Name › Diagram Name in the navbar
+- **React Router** — Client-side routing (`/`, `/projects/:id`, `/projects/:id/diagrams/:id`)
+- **TanStack React Query** — Server state management with caching
+
 ### Productivity
 - **Multi-Select** — Box selection and Shift+click for multiple items
 - **Copy/Paste** — Full clipboard support with Cmd+C/V
@@ -87,14 +100,31 @@ Define service architectures with protocol-aware connections, data contract defi
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
+- The [architecture-diagram-api](../architecture-diagram-api) backend running (for projects, diagrams, and collaboration)
+- Docker (for PostgreSQL via docker-compose)
 
-### Installation
+### Backend Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/architecture-diagram.git
+# From the API repo
+cd architecture-diagram-api
+
+# Start PostgreSQL
+docker compose up -d
+
+# Install dependencies & start
+npm install
+npm run start:dev
+```
+
+The API will be available at `http://localhost:3000`
+
+### Frontend Setup
+
+```bash
+# From this repo
 cd architecture-diagram
 
 # Install dependencies
@@ -105,6 +135,14 @@ npm run dev
 ```
 
 The app will be available at `http://localhost:5173`
+
+### Environment Variables
+
+Create a `.env` file (optional — defaults work for local development):
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
 
 ### Build for Production
 
@@ -206,17 +244,21 @@ npm run preview
 
 ## 🛠️ Tech Stack
 
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **@xyflow/react** - Diagram library (React Flow v12)
-- **Zustand** - State management
-- **Tailwind CSS v4** - Styling
-- **GSAP 3.12+** - Animation engine (MotionPathPlugin for simulation)
-- **Vite** - Build tool
-- **Vitest** - Unit testing
-- **OpenAI SDK** - AI integration (client-side)
-- **html-to-image** - Export functionality
-- **jsPDF** - PDF generation
+- **React 19** — UI framework
+- **TypeScript 5** — Type safety
+- **@xyflow/react 12** — Diagram library (React Flow)
+- **Zustand 5** — State management
+- **Tailwind CSS v4** — Styling
+- **GSAP 3.14** — Animation engine (MotionPathPlugin for simulation)
+- **React Router 6** — Client-side routing
+- **TanStack React Query 5** — Server state management
+- **Socket.IO Client** — Real-time collaboration transport
+- **Yjs** — CRDT for conflict-free collaborative editing
+- **Vite** — Build tool
+- **Vitest** — Unit testing
+- **OpenAI SDK** — AI integration (client-side)
+- **html-to-image** — Export functionality
+- **jsPDF** — PDF generation
 
 ## 📁 Project Structure
 
@@ -233,18 +275,30 @@ src/
 │   │   ├── SimulationStats.tsx    # Real-time simulation metrics overlay
 │   │   ├── ChaosEventLog.tsx      # Chaos mode event timeline
 │   │   └── ShortcutsHelp.tsx      # Keyboard shortcuts modal
-│   └── ui/              # Reusable UI components (Toast, ImportDialog, etc.)
+│   └── ui/              # Reusable UI components
+│       ├── Toast.tsx              # Toast notifications
+│       ├── ImportDialog.tsx       # Diagram import modal
+│       ├── JoinDiagramDialog.tsx  # Collaboration name entry dialog
+│       ├── CollaboratorBadges.tsx # Online user avatar badges
+│       ├── CollaboratorCursors.tsx # Remote cursor SVG overlay
+│       └── ...
 ├── hooks/
+│   ├── useCollaboration.ts        # Socket.IO collaboration (cursors, sync, presence)
 │   ├── useEdgeAnimation.ts        # GSAP edge flow animation
 │   ├── useSimulationAnimation.ts  # GSAP simulation orchestration (flow + failure)
 │   ├── useChaosSimulation.ts      # Chaos engineering interval engine
 │   ├── useDestroyAnimation.ts     # GSAP shatter/explode for node deletion
 │   └── useDragEvent.ts            # Palette drag-and-drop handler
+├── pages/
+│   ├── ProjectsPage.tsx     # Project cards grid (/)
+│   └── ProjectPage.tsx      # Diagram cards for a project (/projects/:id)
 ├── services/
+│   ├── api.ts           # Typed fetch wrapper for backend API
 │   └── ai/              # AI provider integrations
 │       └── providers/   # OpenAI provider implementation
 ├── store/
 │   ├── diagramStore.ts      # Nodes, edges, clipboard, undo/redo
+│   ├── workspaceStore.ts    # Current project/diagram context
 │   ├── simulationStore.ts   # Simulation state (flow, failure, chaos)
 │   ├── animationStore.ts    # Pending deletion animation orchestration
 │   ├── uiStore.ts           # Panel visibility, toasts

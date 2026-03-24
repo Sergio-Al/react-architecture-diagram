@@ -23,6 +23,8 @@ import {
 } from '@/constants';
 import { applyDagreLayout, LayoutDirection } from '@/utils/layout';
 import { checkHealth, HealthCheckResult } from '@/services/healthCheck';
+import { diagramsApi } from '@/services/api';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 
 interface HistoryState {
   nodes: Node[];
@@ -795,11 +797,19 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     }
   },
 
-  // Save to localStorage
+  // Save to localStorage (+ API when a diagramId is active)
   saveDiagram: () => {
     const { nodes, edges } = get();
     const data = { nodes, edges } as DiagramData;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+    // Also persist to backend if we're working on a specific diagram
+    const diagramId = useWorkspaceStore.getState().currentDiagramId;
+    if (diagramId) {
+      diagramsApi.update(diagramId, { data: data as unknown as Record<string, unknown> }).catch((err) => {
+        console.warn('Failed to save diagram to API:', err);
+      });
+    }
   },
 
   // Load from localStorage or URL
