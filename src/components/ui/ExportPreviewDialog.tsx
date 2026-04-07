@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Download, FileImage, FileCode, FileText, File, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDiagramStore } from '@/store/diagramStore';
-import { useUIStore } from '@/store/uiStore';
+import { notify } from '@/services/notify';
 import { 
   generatePreviewPng, 
   generatePreviewSvg, 
@@ -63,8 +63,6 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
   });
 
   const { exportDiagram } = useDiagramStore();
-  const { addToast } = useUIStore();
-
   const stats = getExportStats(exportDiagram());
 
   // Debounced preview generation
@@ -107,8 +105,7 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
       }
     } catch (error) {
       console.error('Preview generation failed:', error);
-      addToast({
-        type: 'error',
+      notify.error({
         title: 'Preview failed',
         message: 'Could not generate preview',
         duration: 3000,
@@ -116,7 +113,7 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedFormat, imageOptions, dataOptions, exportDiagram, addToast]);
+  }, [selectedFormat, imageOptions, dataOptions, exportDiagram]);
 
   const generateJsonPreview = (data: DiagramData): string => {
     let exportData = { ...data };
@@ -146,7 +143,7 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
       : JSON.stringify(exportData);
   };
 
-  const generateMarkdownPreview = (data: DiagramData): string => {
+  const generateMarkdownPreview = (_data: DiagramData): string => {
     let md = '# Architecture Diagram\n\n';
     md += `> Generated: ${new Date().toLocaleString()}\n\n`;
     md += `## Statistics\n\n`;
@@ -186,8 +183,7 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
           break;
       }
       
-      addToast({
-        type: 'success',
+      notify.success({
         title: 'Export successful',
         message: `Exported as ${selectedFormat.toUpperCase()}`,
         duration: 3000,
@@ -196,8 +192,7 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
       onClose();
     } catch (error) {
       console.error('Export failed:', error);
-      addToast({
-        type: 'error',
+      notify.error({
         title: 'Export failed',
         message: error instanceof Error ? error.message : 'Unknown error occurred',
         duration: 5000,

@@ -3,7 +3,6 @@ import { DiagramEditor } from '@/components/DiagramEditor';
 import { NodePalette } from '@/components/panels/NodePalette';
 import { PropertiesPanel } from '@/components/panels/PropertiesPanel';
 import { Navbar } from '@/components/Navbar';
-import { ToastContainer } from '@/components/ui/Toast';
 import { JoinDiagramDialog } from '@/components/ui/JoinDiagramDialog';
 import { useThemeStore } from '@/store/themeStore';
 import { useUIStore } from '@/store/uiStore';
@@ -14,11 +13,13 @@ import { diagramsApi } from '@/services/api';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { DiagramData } from '@/types';
+import { ENABLE_COLLAB, IS_SERVER_MODE } from '@/config/runtime';
+import { Toaster } from 'sileo';
 
 function App() {
   const theme = useThemeStore((state) => state.theme);
-  const { leftPanelVisible, rightPanelVisible, toasts, removeToast } = useUIStore();
-  const { importDiagram, loadDiagram } = useDiagramStore();
+  const { leftPanelVisible, rightPanelVisible } = useUIStore();
+  const { importDiagram, loadDiagram, resetDiagramState } = useDiagramStore();
   const { setCurrentProject, setCurrentDiagram } = useWorkspaceStore();
   const { projectId, diagramId } = useParams<{ projectId: string; diagramId: string }>();
 
@@ -26,7 +27,7 @@ function App() {
   const [collabUserName, setCollabUserName] = useState<string | null>(() => {
     return localStorage.getItem('archdiagram-collab-name');
   });
-  const showJoinDialog = !!diagramId && !collabUserName;
+  const showJoinDialog = ENABLE_COLLAB && !!diagramId && !collabUserName;
 
   // Guard flag to prevent sync loops: remote update → store → send → remote...
   const isApplyingRemoteRef = useRef(false);
@@ -52,14 +53,14 @@ function App() {
     sendDiagramState,
     myColor,
   } = useCollaboration({
-    diagramId: diagramId ?? null,
-    userName: collabUserName,
+    diagramId: ENABLE_COLLAB ? (diagramId ?? null) : null,
+    userName: ENABLE_COLLAB ? collabUserName : null,
     onRemoteDiagramState: handleRemoteDiagramState,
   });
 
   // Subscribe to diagramStore changes and broadcast to other clients
   useEffect(() => {
-    if (!collabConnected || !diagramId) return;
+    if (!ENABLE_COLLAB || !collabConnected || !diagramId) return;
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -84,22 +85,25 @@ function App() {
     setCurrentDiagram(diagramId ?? null);
   }, [projectId, diagramId, setCurrentProject, setCurrentDiagram]);
 
-  // Load diagram data from API or fallback to localStorage
+  // Load diagram data based on runtime mode
   useEffect(() => {
-    if (diagramId) {
+    if (IS_SERVER_MODE && diagramId) {
+      // Always clear the previous diagram's data immediately to avoid cross-contamination
+      resetDiagramState();
       diagramsApi.get(diagramId).then((diagram) => {
         const data = diagram.data as unknown as DiagramData;
         if (data && (data.nodes?.length || data.edges?.length)) {
           importDiagram(data);
         }
+        // If the diagram has no data yet (newly created), store is already empty — no fallback
       }).catch(() => {
-        // Fallback to localStorage if API is unavailable
+        // Fallback to per-diagram localStorage key if API is unavailable
         loadDiagram();
       });
     } else {
       loadDiagram();
     }
-  }, [diagramId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [diagramId, importDiagram, loadDiagram, resetDiagramState]);
 
   // Apply theme on mount and when it changes
   useEffect(() => {
@@ -144,8 +148,20 @@ function App() {
           {rightPanelVisible && <PropertiesPanel />}
         </main>
 
-        {/* Toast Notifications */}
-        <ToastContainer toasts={toasts} onClose={removeToast} />
+        <Toaster
+          position="top-right"
+          offset={{ top: 16, right: 16 }}
+          theme={theme}
+          options={{
+            roundness: 12,
+            styles: {
+              title: 'text-sm font-semibold text-zinc-900 dark:text-zinc-100!',
+              description: 'text-sm text-zinc-600 dark:text-zinc-400!',
+              badge: 'bg-zinc-200/80 dark:bg-zinc-800/80!',
+              button: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100!',
+            },
+          }}
+        />
       </div>
     </ReactFlowProvider>
   );

@@ -2,9 +2,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* Tailwind CSS v4 */
-@import "tailwindcss";
-
 /* Enable class-based dark mode for Tailwind v4 */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -35,6 +32,16 @@
 /* CSS Custom Properties for theming */
 :root {
   font-family: var(--font-sans);
+
+  /* Sileo tokens */
+  --sileo-width: 360px;
+  --sileo-height: 42px;
+  --sileo-state-success: oklch(0.723 0.219 142.136);
+  --sileo-state-loading: oklch(0.556 0 0);
+  --sileo-state-error: oklch(0.637 0.237 25.331);
+  --sileo-state-warning: oklch(0.795 0.184 86.047);
+  --sileo-state-info: oklch(0.685 0.169 237.323);
+  --sileo-state-action: oklch(0.623 0.214 259.815);
   
   /* Default to dark mode colors */
   --bg-primary: #09090b;
@@ -235,4 +242,13 @@ input[type=range]::-webkit-slider-runnable-track {
 
 .animated-edge-dot {
   filter: drop-shadow(0 0 4px #60a5fa);
+}
+
+/* Sileo viewport layering and shadow alignment */
+[data-sileo-viewport] {
+  z-index: 60;
+}
+
+[data-sileo-title] {
+  letter-spacing: -0.01em;
 }

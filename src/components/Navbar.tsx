@@ -18,7 +18,6 @@ import {
   Squares2X2Icon,
   RectangleStackIcon,
   SparklesIcon,
-  Cog6ToothIcon,
   HeartIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
@@ -26,14 +25,8 @@ import { useDiagramStore } from '@/store/diagramStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUIStore } from '@/store/uiStore';
 import { projectsApi, diagramsApi } from '@/services/api';
-import { 
-  exportAsPng, 
-  exportAsSvg, 
-  exportAsPdf, 
-  exportAsMarkdown, 
-  exportAsJson,
-  copyShareableLink 
-} from '@/utils/export';
+import { copyShareableLink } from '@/utils/export';
+import { notify } from '@/services/notify';
 import { SettingsPanel } from '@/components/panels/SettingsPanel';
 import { ExportPreviewDialog } from '@/components/ui/ExportPreviewDialog';
 import { CollaboratorBadges } from '@/components/ui/CollaboratorBadges';
@@ -63,10 +56,10 @@ export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProp
 
   const { undo, redo, canUndo, canRedo, exportDiagram, applyAutoLayout, nodes, runAllHealthChecks, healthCheckResults } = useDiagramStore();
   const { theme, setTheme } = useThemeStore();
-  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel, edgeStyle, toggleEdgeStyle, addToast } = useUIStore();
+  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel, edgeStyle, toggleEdgeStyle } = useUIStore();
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportPreviewOpen, setExportPreviewOpen] = useState(false);
@@ -117,8 +110,7 @@ export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProp
     );
 
     if (healthCheckNodes.length === 0) {
-      addToast({
-        type: 'warning',
+      notify.warning({
         title: 'No health checks configured',
         message: 'Add health check URLs to nodes in the Properties panel',
         duration: 4000,
@@ -136,23 +128,20 @@ export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProp
       const totalCount = healthCheckNodes.length;
       
       if (healthyCount === totalCount) {
-        addToast({
-          type: 'success',
+        notify.success({
           title: `All ${totalCount} services healthy ✓`,
           duration: 4000,
         });
       } else {
         const unhealthyCount = totalCount - healthyCount;
-        addToast({
-          type: 'error',
+        notify.error({
           title: `${unhealthyCount}/${totalCount} services unhealthy`,
           message: 'Check the Properties panel for details',
           duration: 5000,
         });
       }
     } catch (error) {
-      addToast({
-        type: 'error',
+      notify.error({
         title: 'Health check failed',
         message: 'An unexpected error occurred',
         duration: 4000,
@@ -385,15 +374,6 @@ export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProp
           title="Test all health checks"
         >
           <HeartIcon className={`w-3.5 h-3.5 ${isTestingHealth ? 'animate-pulse' : ''}`} />
-        </button>
-
-        {/* AI Settings */}
-        <button 
-          onClick={() => setSettingsOpen(true)}
-          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
-          title="AI Settings"
-        >
-          <Cog6ToothIcon className="w-3.5 h-3.5" />
         </button>
 
         {/* Collaborators */}

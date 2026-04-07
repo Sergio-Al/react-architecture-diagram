@@ -25,6 +25,7 @@ import { applyDagreLayout, LayoutDirection } from '@/utils/layout';
 import { checkHealth, HealthCheckResult } from '@/services/healthCheck';
 import { diagramsApi } from '@/services/api';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { IS_SERVER_MODE } from '@/config/runtime';
 
 interface HistoryState {
   nodes: Node[];
@@ -107,6 +108,8 @@ interface DiagramStore {
   exportDiagram: () => DiagramData;
   importDiagram: (data: DiagramData) => void;
   clearDiagram: () => void;
+  /** Reset in-memory state without persisting — use when switching diagrams. */
+  resetDiagramState: () => void;
 }
 
 // Debounce helper
@@ -801,11 +804,14 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
   saveDiagram: () => {
     const { nodes, edges } = get();
     const data = { nodes, edges } as DiagramData;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+    // Use a per-diagram localStorage key so different diagrams never share the same entry
+    const diagramId = useWorkspaceStore.getState().currentDiagramId;
+    const storageKey = diagramId ? `${STORAGE_KEY}:${diagramId}` : STORAGE_KEY;
+    localStorage.setItem(storageKey, JSON.stringify(data));
 
     // Also persist to backend if we're working on a specific diagram
-    const diagramId = useWorkspaceStore.getState().currentDiagramId;
-    if (diagramId) {
+    if (IS_SERVER_MODE && diagramId) {
       diagramsApi.update(diagramId, { data: data as unknown as Record<string, unknown> }).catch((err) => {
         console.warn('Failed to save diagram to API:', err);
       });
@@ -850,8 +856,10 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
         return;
       }
       
-      // Otherwise load from localStorage
-      const saved = localStorage.getItem(STORAGE_KEY);
+      // Otherwise load from localStorage (use per-diagram key when a diagram is active)
+      const diagramId = useWorkspaceStore.getState().currentDiagramId;
+      const storageKey = diagramId ? `${STORAGE_KEY}:${diagramId}` : STORAGE_KEY;
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const data = JSON.parse(saved) as DiagramData;
         set({
@@ -894,6 +902,22 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     });
     get().saveToHistory();
     get().saveDiagram();
+  },
+
+  // Reset in-memory state without persisting — safe to call when switching diagrams
+  resetDiagramState: () => {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+    set({
+      nodes: [],
+      edges: [],
+      selectedNodeId: null,
+      selectedEdgeId: null,
+      history: [],
+      historyIndex: -1,
+    });
   },
 
   // Apply auto-layout using Dagre

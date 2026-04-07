@@ -77,7 +77,6 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
     addNode,
     setSelectedNode,
     setSelectedEdge,
-    loadDiagram,
     deleteSelectedNodes,
     duplicateNodes,
     addNodeToGroup,
@@ -86,11 +85,6 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
     pasteNodes,
     hasClipboardContent,
   } = useDiagramStore();
-
-  // Load saved diagram on mount
-  useEffect(() => {
-    loadDiagram();
-  }, [loadDiagram]);
 
   // Prevent default context menu on the diagram
   useEffect(() => {

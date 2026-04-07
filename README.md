@@ -141,8 +141,15 @@ The app will be available at `http://localhost:5173`
 Create a `.env` file (optional — defaults work for local development):
 
 ```env
+VITE_APP_MODE=local
 VITE_API_URL=http://localhost:3000/api
+VITE_ENABLE_COLLAB=true
 ```
+
+Mode notes:
+- `VITE_APP_MODE=local` runs the standalone editor at `/` and keeps persistence local-first.
+- `VITE_APP_MODE=server` enables workspace routing (`/`, `/projects/:id`, `/projects/:id/diagrams/:id`) with API-backed data.
+- `VITE_ENABLE_COLLAB=false` disables realtime collaboration sockets even in server mode.
 
 ### Build for Production
 

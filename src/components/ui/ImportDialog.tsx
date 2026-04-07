@@ -3,8 +3,8 @@ import { X, Upload, FileJson, FileText, AlertCircle, CheckCircle2 } from 'lucide
 import { cn } from '@/lib/utils';
 import { importDiagram, detectFileFormat } from '@/utils/import';
 import { useDiagramStore } from '@/store/diagramStore';
-import { useUIStore } from '@/store/uiStore';
 import { mergeDiagramData, appendDiagramData } from '@/utils/import';
+import { notify } from '@/services/notify';
 
 interface ImportDialogProps {
   isOpen: boolean;
@@ -23,7 +23,6 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { exportDiagram, importDiagram: storImportDiagram } = useDiagramStore();
-  const { addToast } = useUIStore();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -101,8 +100,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
       
       storImportDiagram(finalData);
       
-      addToast({
-        type: 'success',
+      notify.success({
         title: 'Import successful',
         message: `Imported ${previewData.nodes.length} nodes and ${previewData.edges.length} edges`,
         duration: 3000,
@@ -111,14 +109,13 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
       onClose();
       resetState();
     } catch (error) {
-      addToast({
-        type: 'error',
+      notify.error({
         title: 'Import failed',
         message: error instanceof Error ? error.message : 'Unknown error occurred',
         duration: 5000,
       });
     }
-  }, [previewData, importMode, includeViewport, exportDiagram, storImportDiagram, addToast, onClose]);
+  }, [previewData, importMode, includeViewport, exportDiagram, storImportDiagram, onClose]);
 
   const resetState = () => {
     setFileContent('');

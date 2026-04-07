@@ -341,6 +341,7 @@ export function PropertiesPanel() {
     const Icon = config.icon;
 
     return (
+      <>
       <aside className="w-80 bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col z-20">
         {/* Header */}
         <div className="h-14 border-b border-zinc-200 dark:border-zinc-800 flex items-center px-5 justify-between">
@@ -701,7 +702,16 @@ export function PropertiesPanel() {
           </button>
         </div>
       </aside>
-    );
+      <IconPickerDialog
+        isOpen={isIconPickerOpen}
+        onClose={() => setIsIconPickerOpen(false)}
+        onSelect={(iconId) => {
+          updateNodeData(selectedNode.id, { iconifyIcon: iconId });
+          setIsIconPickerOpen(false);
+        }}
+        currentIcon={(selectedNode.data as ArchitectureNodeData).iconifyIcon}
+      />
+    </>);
   }
 
   if (selectedEdge) {
@@ -1015,22 +1025,9 @@ export function PropertiesPanel() {
     );
   }
 
-  return (
-    <>
-      {selectedNode && selectedNode.type === 'architecture' && (
-        <IconPickerDialog
-          isOpen={isIconPickerOpen}
-          onClose={() => setIsIconPickerOpen(false)}
-          onSelect={(iconId) => {
-            updateNodeData(selectedNode.id, { iconifyIcon: iconId });
-            setIsIconPickerOpen(false);
-          }}
-          currentIcon={(selectedNode.data as ArchitectureNodeData).iconifyIcon}
-        />
-      )}
-    </>
-  );
+  return null;
 }
+
 
 // Custom Toggle Switch Component
 function ToggleSwitch({ 

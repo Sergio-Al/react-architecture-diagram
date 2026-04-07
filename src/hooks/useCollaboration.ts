@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import * as Y from 'yjs';
 import type { Node, Edge } from '@xyflow/react';
+import { ENABLE_COLLAB, WS_BASE_URL } from '@/config/runtime';
 
 export interface CollaboratorUser {
   name: string;
@@ -21,7 +22,7 @@ interface UseCollaborationOptions {
   onRemoteDiagramState?: (nodes: Node[], edges: Edge[]) => void;
 }
 
-const WS_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3000';
+const WS_URL = WS_BASE_URL;
 
 export function useCollaboration({ diagramId, userName, onRemoteDiagramState }: UseCollaborationOptions) {
   const socketRef = useRef<Socket | null>(null);
@@ -36,6 +37,7 @@ export function useCollaboration({ diagramId, userName, onRemoteDiagramState }: 
 
   // Connect to collaboration server
   useEffect(() => {
+    if (!ENABLE_COLLAB) return;
     if (!diagramId || !userName) return;
 
     const socket = io(`${WS_URL}/collaboration`, {
@@ -62,6 +64,10 @@ export function useCollaboration({ diagramId, userName, onRemoteDiagramState }: 
       // Find our own color
       const me = data.users.find((u) => u.name === userName);
       if (me) setMyColor(me.color);
+
+      // Remove cursors for users who are no longer in the room
+      const activeNames = new Set(data.users.map((u) => u.name));
+      setRemoteCursors((prev) => prev.filter((c) => activeNames.has(c.userName)));
     });
 
     // Handle Yjs sync messages from server

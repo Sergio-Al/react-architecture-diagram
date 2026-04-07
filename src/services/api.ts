@@ -1,6 +1,7 @@
 // API service for architecture-diagram-api backend
+import { API_BASE_URL } from '@/config/runtime';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+const API_BASE = API_BASE_URL;
 
 // --- Types ---
 
