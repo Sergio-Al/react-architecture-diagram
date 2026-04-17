@@ -29,6 +29,19 @@ export interface ApiDiagram {
 /** Diagram list item (no `data` field to keep list responses light) */
 export type ApiDiagramSummary = Omit<ApiDiagram, 'data'>;
 
+export interface ApiDiagramVersion {
+  id: string;
+  diagramId: string;
+  versionNumber: number;
+  label: string | null;
+  thumbnail: string | null;
+  createdAt: string;
+}
+
+export interface ApiDiagramVersionFull extends ApiDiagramVersion {
+  data: Record<string, unknown>;
+}
+
 // --- Helpers ---
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -109,4 +122,34 @@ export const diagramsApi = {
       method: 'PUT',
       body: JSON.stringify({ thumbnail }),
     }),
+};
+
+// --- Diagram Versions ---
+
+export const versionsApi = {
+  list: (diagramId: string) =>
+    request<ApiDiagramVersion[]>(`/diagrams/${encodeURIComponent(diagramId)}/versions`),
+
+  get: (diagramId: string, versionId: string) =>
+    request<ApiDiagramVersionFull>(
+      `/diagrams/${encodeURIComponent(diagramId)}/versions/${encodeURIComponent(versionId)}`,
+    ),
+
+  create: (diagramId: string, label?: string) =>
+    request<ApiDiagramVersion>(`/diagrams/${encodeURIComponent(diagramId)}/versions`, {
+      method: 'POST',
+      body: JSON.stringify({ label }),
+    }),
+
+  restore: (diagramId: string, versionId: string) =>
+    request<void>(
+      `/diagrams/${encodeURIComponent(diagramId)}/versions/${encodeURIComponent(versionId)}/restore`,
+      { method: 'POST' },
+    ),
+
+  delete: (diagramId: string, versionId: string) =>
+    request<void>(
+      `/diagrams/${encodeURIComponent(diagramId)}/versions/${encodeURIComponent(versionId)}`,
+      { method: 'DELETE' },
+    ),
 };

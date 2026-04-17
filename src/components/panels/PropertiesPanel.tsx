@@ -288,6 +288,52 @@ export function PropertiesPanel() {
                 />
               </div>
 
+              {/* Accent Color */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Accent Color
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={groupData.accentColor || '#a1a1aa'}
+                    onChange={(e) => updateGroupData(selectedNode.id, { accentColor: e.target.value })}
+                    className="h-8 w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded cursor-pointer"
+                  />
+                  {groupData.accentColor && (
+                    <button
+                      onClick={() => updateGroupData(selectedNode.id, { accentColor: undefined })}
+                      className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Background Color */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Background Color
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={groupData.backgroundColor || '#6366f1'}
+                    onChange={(e) => updateGroupData(selectedNode.id, { backgroundColor: e.target.value })}
+                    className="h-8 w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded cursor-pointer"
+                  />
+                  {groupData.backgroundColor && (
+                    <button
+                      onClick={() => updateGroupData(selectedNode.id, { backgroundColor: undefined })}
+                      className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Collapsed Toggle */}
               <div className="flex items-center justify-between py-1">
                 <label className="text-xs text-zinc-700 dark:text-zinc-300">Collapsed</label>
@@ -508,6 +554,52 @@ export function PropertiesPanel() {
                   <option value="inactive">Maintenance</option>
                 </select>
                 <ChevronDownIcon className="absolute right-2 top-2 w-3 h-3 text-zinc-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Accent Color */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Accent Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={nodeData.accentColor || '#a1a1aa'}
+                  onChange={(e) => updateNodeData(selectedNode.id, { accentColor: e.target.value })}
+                  className="h-8 w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded cursor-pointer"
+                />
+                {nodeData.accentColor && (
+                  <button
+                    onClick={() => updateNodeData(selectedNode.id, { accentColor: undefined })}
+                    className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Background Color */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Background Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={nodeData.backgroundColor || '#6366f1'}
+                  onChange={(e) => updateNodeData(selectedNode.id, { backgroundColor: e.target.value })}
+                  className="h-8 w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded cursor-pointer"
+                />
+                {nodeData.backgroundColor && (
+                  <button
+                    onClick={() => updateNodeData(selectedNode.id, { backgroundColor: undefined })}
+                    className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
               </div>
             </div>
 

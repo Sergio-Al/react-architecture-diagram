@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowUturnLeftIcon, 
   ArrowUturnRightIcon,
@@ -20,17 +20,22 @@ import {
   SparklesIcon,
   HeartIcon,
   ChevronRightIcon,
+  ClockIcon,
+  BookmarkIcon,
 } from '@heroicons/react/24/outline';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUIStore } from '@/store/uiStore';
-import { projectsApi, diagramsApi } from '@/services/api';
+import { projectsApi, diagramsApi, versionsApi } from '@/services/api';
 import { copyShareableLink } from '@/utils/export';
 import { notify } from '@/services/notify';
 import { SettingsPanel } from '@/components/panels/SettingsPanel';
+import { VersionsPanel } from '@/components/panels/VersionsPanel';
+import { SaveVersionDialog } from '@/components/ui/SaveVersionDialog';
 import { ExportPreviewDialog } from '@/components/ui/ExportPreviewDialog';
 import { CollaboratorBadges } from '@/components/ui/CollaboratorBadges';
 import { ArchitectureNodeData } from '@/types';
+import { IS_SERVER_MODE } from '@/config/runtime';
 import type { CollaboratorUser } from '@/hooks/useCollaboration';
 
 interface NavbarProps {
@@ -65,8 +70,23 @@ export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProp
   const [exportPreviewOpen, setExportPreviewOpen] = useState(false);
   const [selectedExportFormat, setSelectedExportFormat] = useState<'png' | 'svg' | 'pdf' | 'json' | 'markdown'>('png');
   const [isTestingHealth, setIsTestingHealth] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [saveVersionOpen, setSaveVersionOpen] = useState(false);
+  const queryClient = useQueryClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const layoutDropdownRef = useRef<HTMLDivElement>(null);
+
+  const saveVersionMutation = useMutation({
+    mutationFn: (label: string) => versionsApi.create(diagramId!, label || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['versions', diagramId] });
+      setSaveVersionOpen(false);
+      notify.success({ title: 'Version saved', message: 'Snapshot added to version history' });
+    },
+    onError: () => {
+      notify.error({ title: 'Failed to save version' });
+    },
+  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -308,7 +328,27 @@ export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProp
             </div>
           )}
         </div>
-        
+
+        {/* Version History (server mode only) */}
+        {IS_SERVER_MODE && diagramId && (
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-1 gap-1">
+            <button
+              onClick={() => setSaveVersionOpen(true)}
+              className="flex items-center gap-1 p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              title="Save a version snapshot"
+            >
+              <BookmarkIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setVersionsOpen(true)}
+              className="flex items-center gap-1.5 p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-xs"
+              title="View version history"
+            >
+              <ClockIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Export Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button 
@@ -419,6 +459,25 @@ export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProp
         onClose={() => setExportPreviewOpen(false)}
         initialFormat={selectedExportFormat}
       />
+
+      {/* Version History Modal */}
+      {IS_SERVER_MODE && diagramId && (
+        <VersionsPanel
+          isOpen={versionsOpen}
+          onClose={() => setVersionsOpen(false)}
+          diagramId={diagramId}
+        />
+      )}
+
+      {/* Save Version Dialog */}
+      {IS_SERVER_MODE && diagramId && (
+        <SaveVersionDialog
+          isOpen={saveVersionOpen}
+          isSaving={saveVersionMutation.isPending}
+          onSave={(label) => saveVersionMutation.mutate(label)}
+          onClose={() => setSaveVersionOpen(false)}
+        />
+      )}
     </header>
   );
 }

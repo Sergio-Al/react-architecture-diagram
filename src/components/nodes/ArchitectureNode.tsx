@@ -55,6 +55,8 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
   const statusColor = getStatusColor();
   const healthResult = getNodeHealthResult(id);
   const hasHealthCheck = !!nodeData.healthCheckUrl;
+  const accentColor = nodeData.accentColor;
+  const backgroundColor = nodeData.backgroundColor;
 
   // Simulation state
   const failedNodeIds = useSimulationStore((s) => s.failedNodeIds);
@@ -99,6 +101,13 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
         setShowTooltip(false);
       }}
     >
+      {/* Background tint overlay */}
+      {backgroundColor && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ backgroundColor: `${backgroundColor}33`, zIndex: -1, borderRadius: 'inherit' }}
+        />
+      )}
       {/* Description Tooltip */}
       {showTooltip && hasDescription && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
@@ -126,6 +135,7 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
       {/* Icon */}
       <div 
         className={cn('p-2.5 rounded-lg cursor-pointer nodrag nopan', config.bgClass, config.borderClass, 'border')}
+        style={accentColor ? { borderColor: accentColor, boxShadow: `0 0 0 1px ${accentColor}33 inset` } : undefined}
         onDoubleClick={(e) => {
           e.stopPropagation();
           setIsIconPickerOpen(true);
@@ -136,10 +146,14 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
           <IconifyIcon 
             icon={nodeData.iconifyIcon} 
             className="w-5 h-5" 
-            style={{ color: nodeData.iconColor || config.iconColor.replace('text-', '') }}
+            style={{ color: nodeData.iconColor || accentColor }}
           />
         ) : (
-          <Icon className={cn('w-5 h-5', config.iconColor)} strokeWidth={1.5} />
+          <Icon
+            className={cn('w-5 h-5', config.iconColor)}
+            style={accentColor ? { color: accentColor } : undefined}
+            strokeWidth={1.5}
+          />
         )}
       </div>
 
