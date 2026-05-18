@@ -89,6 +89,7 @@ Built with React 19, React Flow, GSAP, and a NestJS backend for multi-project wo
 - **Multi-Select** — Box selection and Shift+click for multiple items
 - **Copy/Paste** — Full clipboard support with Cmd+C/V
 - **Collapsible Groups** — Hide/show group contents for cleaner views
+- **Group Layer Order** — Right-click a group to bring it to front or send it to back when groups overlap
 - **Export Options** — PNG, SVG, JSON, Markdown, PDF + export selected only
 - **Import/Export** — Smart import with validation, supports JSON and Markdown formats
 - **Import Modes** — Replace, merge, or append diagrams with conflict resolution

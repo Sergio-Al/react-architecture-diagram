@@ -79,6 +79,8 @@ interface DiagramStore {
   toggleGroupCollapse: (id: string) => void;
   addNodeToGroup: (nodeId: string, groupId: string, relativePosition?: { x: number; y: number }) => void;
   removeNodeFromGroup: (nodeId: string) => void;
+  bringNodeToFront: (id: string) => void;
+  sendNodeToBack: (id: string) => void;
   
   updateEdgeData: (id: string, data: Partial<ArchitectureEdgeData>) => void;
   deleteEdge: (id: string) => void;
@@ -559,6 +561,36 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
   hasClipboardContent: () => {
     const { clipboard } = get();
     return clipboard.nodes.length > 0;
+  },
+
+  // Bring node to front (increase zIndex above all other group nodes)
+  bringNodeToFront: (id) => {
+    set((state) => {
+      const groupNodes = state.nodes.filter(n => n.type === 'group');
+      const maxZ = groupNodes.reduce((max, n) => Math.max(max, n.zIndex ?? -1), -1);
+      return {
+        nodes: state.nodes.map(n =>
+          n.id === id ? { ...n, zIndex: maxZ + 1 } : n
+        ),
+      };
+    });
+    get().saveToHistory();
+    debouncedSave(get().saveDiagram);
+  },
+
+  // Send node to back (decrease zIndex below all other group nodes)
+  sendNodeToBack: (id) => {
+    set((state) => {
+      const groupNodes = state.nodes.filter(n => n.type === 'group');
+      const minZ = groupNodes.reduce((min, n) => Math.min(min, n.zIndex ?? -1), -1);
+      return {
+        nodes: state.nodes.map(n =>
+          n.id === id ? { ...n, zIndex: minZ - 1 } : n
+        ),
+      };
+    });
+    get().saveToHistory();
+    debouncedSave(get().saveDiagram);
   },
 
   // Update group data

@@ -26,6 +26,8 @@ import {
   ClipboardDocumentIcon,
   ArrowUpTrayIcon,
   BoltIcon,
+  ArrowUpCircleIcon,
+  ArrowDownCircleIcon,
 } from '@heroicons/react/24/outline';
 import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
@@ -91,6 +93,8 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
     copySelectedNodes,
     pasteNodes,
     hasClipboardContent,
+    bringNodeToFront,
+    sendNodeToBack,
   } = useDiagramStore();
 
   // Prevent default context menu on the diagram.
@@ -697,6 +701,29 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
               {nodes.filter(n => n.selected).length > 0 && (
                 <div className="my-1 h-px bg-zinc-200 dark:bg-zinc-700" />
               )}
+              {/* Layer Order Section - only for single selected group */}
+              {nodes.filter(n => n.selected && n.type === 'group').length === 1 && (() => {
+                const groupNode = nodes.find(n => n.selected && n.type === 'group')!;
+                return (
+                  <>
+                    <button
+                      onClick={() => { bringNodeToFront(groupNode.id); setContextMenu({ x: 0, y: 0, show: false }); }}
+                      className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white rounded-md flex items-center gap-2"
+                    >
+                      <ArrowUpCircleIcon className="w-3.5 h-3.5" />
+                      Bring to Front
+                    </button>
+                    <button
+                      onClick={() => { sendNodeToBack(groupNode.id); setContextMenu({ x: 0, y: 0, show: false }); }}
+                      className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white rounded-md flex items-center gap-2"
+                    >
+                      <ArrowDownCircleIcon className="w-3.5 h-3.5" />
+                      Send to Back
+                    </button>
+                    <div className="my-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+                  </>
+                );
+              })()}
               {/* Export Section */}
               {nodes.filter(n => n.selected).length > 0 && (
                 <>
