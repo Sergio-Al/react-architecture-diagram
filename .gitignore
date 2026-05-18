@@ -38,6 +38,12 @@ lerna-debug.log*
 ehthumbs.db
 Thumbs.db
 
+# Proprietary visual assets (not for redistribution)
+public/favicon*
+public/apple-touch-icon*
+public/android-chrome*
+public/icons-night/
+
 # Environment variables
 .env
 .env.local
