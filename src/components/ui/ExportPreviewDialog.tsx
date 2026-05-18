@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Download, FileImage, FileCode, FileText, File, CheckCircle2 } from 'lucide-react';
+import { X, Download, FileImage, FileCode, FileText, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDiagramStore } from '@/store/diagramStore';
 import { notify } from '@/services/notify';
@@ -10,12 +10,11 @@ import {
   exportAsPng,
   exportAsSvg,
   exportAsPdf,
-  exportAsMarkdown,
   exportAsJson
 } from '@/utils/export';
 import { DiagramData } from '@/types';
 
-type ExportFormat = 'png' | 'svg' | 'pdf' | 'json' | 'markdown';
+type ExportFormat = 'png' | 'svg' | 'pdf' | 'json';
 
 interface ExportPreviewDialogProps {
   isOpen: boolean;
@@ -42,6 +41,14 @@ interface PdfOptions {
 export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: ExportPreviewDialogProps) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>(initialFormat);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+
+  // Sync the selected format every time the dialog opens so the navbar's
+  // chosen format is always reflected (useState only reads its argument once).
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedFormat(initialFormat);
+    }
+  }, [isOpen, initialFormat]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
@@ -95,10 +102,6 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
         const data = exportDiagram();
         const jsonContent = generateJsonPreview(data);
         setPreviewUrl(jsonContent);
-      } else if (selectedFormat === 'markdown') {
-        const data = exportDiagram();
-        const mdContent = generateMarkdownPreview(data);
-        setPreviewUrl(mdContent);
       } else if (selectedFormat === 'pdf') {
         // PDF doesn't have a preview, just show placeholder
         setPreviewUrl('');
@@ -143,18 +146,6 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
       : JSON.stringify(exportData);
   };
 
-  const generateMarkdownPreview = (_data: DiagramData): string => {
-    let md = '# Architecture Diagram\n\n';
-    md += `> Generated: ${new Date().toLocaleString()}\n\n`;
-    md += `## Statistics\n\n`;
-    md += `- **Nodes**: ${stats.nodeCount}\n`;
-    md += `- **Edges**: ${stats.edgeCount}\n`;
-    md += `- **Groups**: ${stats.groupCount}\n\n`;
-    
-    // Truncate for preview
-    return md + '...\n\n_Full content will be exported_';
-  };
-
   const handleExport = async () => {
     setIsExporting(true);
     
@@ -174,9 +165,6 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
           break;
         case 'pdf':
           await exportAsPdf(bgColor, pdfOptions.orientation);
-          break;
-        case 'markdown':
-          exportAsMarkdown(data);
           break;
         case 'json':
           exportAsJson(data, dataOptions);
@@ -214,11 +202,10 @@ export function ExportPreviewDialog({ isOpen, onClose, initialFormat = 'png' }: 
     { value: 'svg', label: 'SVG', icon: FileCode },
     { value: 'pdf', label: 'PDF', icon: FileText },
     { value: 'json', label: 'JSON', icon: FileCode },
-    { value: 'markdown', label: 'Markdown', icon: File },
   ];
 
   const isImageFormat = selectedFormat === 'png' || selectedFormat === 'svg';
-  const isDataFormat = selectedFormat === 'json' || selectedFormat === 'markdown';
+  const isDataFormat = selectedFormat === 'json';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

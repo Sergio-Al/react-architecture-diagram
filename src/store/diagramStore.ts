@@ -77,7 +77,7 @@ interface DiagramStore {
   // Group actions
   updateGroupData: (id: string, data: Partial<GroupNodeData>) => void;
   toggleGroupCollapse: (id: string) => void;
-  addNodeToGroup: (nodeId: string, groupId: string) => void;
+  addNodeToGroup: (nodeId: string, groupId: string, relativePosition?: { x: number; y: number }) => void;
   removeNodeFromGroup: (nodeId: string) => void;
   
   updateEdgeData: (id: string, data: Partial<ArchitectureEdgeData>) => void;
@@ -626,24 +626,40 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
   },
 
   // Add node to group
-  addNodeToGroup: (nodeId, groupId) => {
+  addNodeToGroup: (nodeId, groupId, relativePosition?) => {
     set((state) => {
       const groupNode = state.nodes.find(n => n.id === groupId);
       const targetNode = state.nodes.find(n => n.id === nodeId);
       if (!groupNode || !targetNode) return state;
 
-      // Get group dimensions
-      const groupWidth = (groupNode.style?.width as number) || 300;
-      const groupHeight = (groupNode.style?.height as number) || 250;
-      
-      // Fixed node dimensions for architecture nodes
-      const nodeWidth = 140;
-      const nodeHeight = 100;
+      // Use live dimensions from React Flow when available, then fall back.
+      const groupWidth =
+        groupNode.measured?.width ??
+        groupNode.width ??
+        ((groupNode.style?.width as number) || 300);
+      const groupHeight =
+        groupNode.measured?.height ??
+        groupNode.height ??
+        ((groupNode.style?.height as number) || 250);
+      const nodeWidth =
+        targetNode.measured?.width ??
+        targetNode.width ??
+        ((targetNode.style?.width as number) || 140);
+      const nodeHeight =
+        targetNode.measured?.height ??
+        targetNode.height ??
+        ((targetNode.style?.height as number) || 100);
       const padding = 20;
 
-      // Always place in center of group for reliable positioning
-      const relativeX = Math.max(padding, (groupWidth - nodeWidth) / 2);
-      const relativeY = Math.max(padding + 10, (groupHeight - nodeHeight) / 2);
+      // relativePosition is pre-computed by the caller using React Flow's internal
+      // positionAbsolute values (the authoritative source). If not provided, fall back
+      // to center of group.
+      const rawX = relativePosition?.x ?? (groupWidth - nodeWidth) / 2;
+      const rawY = relativePosition?.y ?? (groupHeight - nodeHeight) / 2;
+      const maxX = Math.max(padding, groupWidth - nodeWidth - padding);
+      const maxY = Math.max(padding, groupHeight - nodeHeight - padding);
+      const relativeX = Math.max(padding, Math.min(rawX, maxX));
+      const relativeY = Math.max(padding, Math.min(rawY, maxY));
 
       // Update the target node with parent relationship
       // @xyflow/react v12 uses parentId, NOT parentNode
