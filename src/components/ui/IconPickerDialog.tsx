@@ -3,7 +3,7 @@ import { X, Search, Sparkles, Loader2 } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { cn } from '@/lib/utils';
 import { searchIcons, getCollections, getFeaturedCollections, type IconifyCollection } from '@/services/iconify';
-import { useUIStore } from '@/store/uiStore';
+import { notify } from '@/services/notify';
 
 interface IconPickerDialogProps {
   isOpen: boolean;
@@ -22,8 +22,6 @@ export function IconPickerDialog({ isOpen, onClose, onSelect, currentIcon }: Ico
   const [loadingCollections, setLoadingCollections] = useState(false);
   const [error, setError] = useState<string>('');
   const [totalResults, setTotalResults] = useState(0);
-  
-  const { addToast } = useUIStore();
 
   // Debounced search
   useEffect(() => {
@@ -82,10 +80,9 @@ export function IconPickerDialog({ isOpen, onClose, onSelect, currentIcon }: Ico
       const errorMessage = err instanceof Error ? err.message : 'Failed to search icons';
       setError(errorMessage);
       setIcons([]);
-      addToast({
+      notify.error({
         title: 'Search Failed',
         message: errorMessage,
-        type: 'error',
       });
     } finally {
       setLoading(false);

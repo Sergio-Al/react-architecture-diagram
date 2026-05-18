@@ -23,6 +23,9 @@ import {
 } from '@/constants';
 import { applyDagreLayout, LayoutDirection } from '@/utils/layout';
 import { checkHealth, HealthCheckResult } from '@/services/healthCheck';
+import { diagramsApi } from '@/services/api';
+import { useWorkspaceStore } from '@/store/workspaceStore';
+import { IS_SERVER_MODE } from '@/config/runtime';
 
 interface HistoryState {
   nodes: Node[];
@@ -74,7 +77,7 @@ interface DiagramStore {
   // Group actions
   updateGroupData: (id: string, data: Partial<GroupNodeData>) => void;
   toggleGroupCollapse: (id: string) => void;
-  addNodeToGroup: (nodeId: string, groupId: string) => void;
+  addNodeToGroup: (nodeId: string, groupId: string, relativePosition?: { x: number; y: number }) => void;
   removeNodeFromGroup: (nodeId: string) => void;
   
   updateEdgeData: (id: string, data: Partial<ArchitectureEdgeData>) => void;
@@ -105,6 +108,8 @@ interface DiagramStore {
   exportDiagram: () => DiagramData;
   importDiagram: (data: DiagramData) => void;
   clearDiagram: () => void;
+  /** Reset in-memory state without persisting — use when switching diagrams. */
+  resetDiagramState: () => void;
 }
 
 // Debounce helper
@@ -621,24 +626,40 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
   },
 
   // Add node to group
-  addNodeToGroup: (nodeId, groupId) => {
+  addNodeToGroup: (nodeId, groupId, relativePosition?) => {
     set((state) => {
       const groupNode = state.nodes.find(n => n.id === groupId);
       const targetNode = state.nodes.find(n => n.id === nodeId);
       if (!groupNode || !targetNode) return state;
 
-      // Get group dimensions
-      const groupWidth = (groupNode.style?.width as number) || 300;
-      const groupHeight = (groupNode.style?.height as number) || 250;
-      
-      // Fixed node dimensions for architecture nodes
-      const nodeWidth = 140;
-      const nodeHeight = 100;
+      // Use live dimensions from React Flow when available, then fall back.
+      const groupWidth =
+        groupNode.measured?.width ??
+        groupNode.width ??
+        ((groupNode.style?.width as number) || 300);
+      const groupHeight =
+        groupNode.measured?.height ??
+        groupNode.height ??
+        ((groupNode.style?.height as number) || 250);
+      const nodeWidth =
+        targetNode.measured?.width ??
+        targetNode.width ??
+        ((targetNode.style?.width as number) || 140);
+      const nodeHeight =
+        targetNode.measured?.height ??
+        targetNode.height ??
+        ((targetNode.style?.height as number) || 100);
       const padding = 20;
 
-      // Always place in center of group for reliable positioning
-      const relativeX = Math.max(padding, (groupWidth - nodeWidth) / 2);
-      const relativeY = Math.max(padding + 10, (groupHeight - nodeHeight) / 2);
+      // relativePosition is pre-computed by the caller using React Flow's internal
+      // positionAbsolute values (the authoritative source). If not provided, fall back
+      // to center of group.
+      const rawX = relativePosition?.x ?? (groupWidth - nodeWidth) / 2;
+      const rawY = relativePosition?.y ?? (groupHeight - nodeHeight) / 2;
+      const maxX = Math.max(padding, groupWidth - nodeWidth - padding);
+      const maxY = Math.max(padding, groupHeight - nodeHeight - padding);
+      const relativeX = Math.max(padding, Math.min(rawX, maxX));
+      const relativeY = Math.max(padding, Math.min(rawY, maxY));
 
       // Update the target node with parent relationship
       // @xyflow/react v12 uses parentId, NOT parentNode
@@ -795,11 +816,22 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     }
   },
 
-  // Save to localStorage
+  // Save to localStorage (+ API when a diagramId is active)
   saveDiagram: () => {
     const { nodes, edges } = get();
     const data = { nodes, edges } as DiagramData;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+    // Use a per-diagram localStorage key so different diagrams never share the same entry
+    const diagramId = useWorkspaceStore.getState().currentDiagramId;
+    const storageKey = diagramId ? `${STORAGE_KEY}:${diagramId}` : STORAGE_KEY;
+    localStorage.setItem(storageKey, JSON.stringify(data));
+
+    // Also persist to backend if we're working on a specific diagram
+    if (IS_SERVER_MODE && diagramId) {
+      diagramsApi.update(diagramId, { data: data as unknown as Record<string, unknown> }).catch((err) => {
+        console.warn('Failed to save diagram to API:', err);
+      });
+    }
   },
 
   // Load from localStorage or URL
@@ -840,8 +872,10 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
         return;
       }
       
-      // Otherwise load from localStorage
-      const saved = localStorage.getItem(STORAGE_KEY);
+      // Otherwise load from localStorage (use per-diagram key when a diagram is active)
+      const diagramId = useWorkspaceStore.getState().currentDiagramId;
+      const storageKey = diagramId ? `${STORAGE_KEY}:${diagramId}` : STORAGE_KEY;
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const data = JSON.parse(saved) as DiagramData;
         set({
@@ -884,6 +918,22 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     });
     get().saveToHistory();
     get().saveDiagram();
+  },
+
+  // Reset in-memory state without persisting — safe to call when switching diagrams
+  resetDiagramState: () => {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+    set({
+      nodes: [],
+      edges: [],
+      selectedNodeId: null,
+      selectedEdgeId: null,
+      history: [],
+      historyIndex: -1,
+    });
   },
 
   // Apply auto-layout using Dagre

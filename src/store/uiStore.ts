@@ -1,13 +1,4 @@
 import { create } from 'zustand';
-import { ToastType } from '@/components/ui/Toast';
-
-interface Toast {
-  id: string;
-  type: ToastType;
-  title: string;
-  message?: string;
-  duration?: number;
-}
 
 export type EdgeStyle = 'step' | 'bezier';
 
@@ -20,12 +11,6 @@ interface UIState {
   // Edge style
   edgeStyle: EdgeStyle;
   toggleEdgeStyle: () => void;
-  
-  // Toast notifications
-  toasts: Toast[];
-  addToast: (toast: Omit<Toast, 'id'>) => void;
-  removeToast: (id: string) => void;
-  clearToasts: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -37,22 +22,4 @@ export const useUIStore = create<UIState>((set) => ({
   // Edge style
   edgeStyle: 'step',
   toggleEdgeStyle: () => set((state) => ({ edgeStyle: state.edgeStyle === 'step' ? 'bezier' : 'step' })),
-  
-  // Toast management
-  toasts: [],
-  addToast: (toast) =>
-    set((state) => ({
-      toasts: [
-        ...state.toasts,
-        {
-          ...toast,
-          id: `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        },
-      ],
-    })),
-  removeToast: (id) =>
-    set((state) => ({
-      toasts: state.toasts.filter((t) => t.id !== id),
-    })),
-  clearToasts: () => set({ toasts: [] }),
 }));

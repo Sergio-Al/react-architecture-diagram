@@ -11,8 +11,9 @@ import { useThemeStore } from '@/store/themeStore';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useEdgeAnimation } from '@/hooks/useEdgeAnimation';
 import { useUIStore } from '@/store/uiStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { PROTOCOL_CONFIG } from '@/constants';
+import { EdgeDetailsDialog } from '@/components/ui/EdgeDetailsDialog';
 
 export function ArchitectureEdge({
   id,
@@ -29,6 +30,12 @@ export function ArchitectureEdge({
   const { theme } = useThemeStore();
   const { edgeStyle } = useUIStore();
   const [isDark, setIsDark] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDialogOpen(true);
+  }, []);
 
   useEffect(() => {
     // Determine if dark mode is active
@@ -241,8 +248,22 @@ export function ArchitectureEdge({
         </g>
       )}
       
-      {fullLabel && (
-        <EdgeLabelRenderer>
+      <EdgeLabelRenderer>
+        {/* Invisible hit area at edge centre — always present for double-click */}
+        {!fullLabel && (
+          <div
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: 'all',
+              width: 24,
+              height: 24,
+            }}
+            onDoubleClick={handleDoubleClick}
+          />
+        )}
+
+        {fullLabel && (
           <div
             style={{
               position: 'absolute',
@@ -250,17 +271,26 @@ export function ArchitectureEdge({
               pointerEvents: 'all',
             }}
             className={cn(
-              'px-2 py-0.5 text-[10px] font-medium rounded-full',
+              'px-2 py-0.5 text-[10px] font-medium rounded-full cursor-pointer',
               'bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700',
               'text-zinc-600 dark:text-zinc-400',
+              'hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors',
               selected && 'border-zinc-400 dark:border-zinc-500 text-zinc-800 dark:text-zinc-200'
             )}
-            title={edgeData?.dataContract?.description || edgeData?.description}
+            title="Double-click to view edge details"
+            onDoubleClick={handleDoubleClick}
           >
             {fullLabel}
           </div>
-        </EdgeLabelRenderer>
-      )}
+        )}
+      </EdgeLabelRenderer>
+
+      <EdgeDetailsDialog
+        open={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        edgeId={id}
+        data={edgeData}
+      />
     </g>
   );
 }

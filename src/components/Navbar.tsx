@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowUturnLeftIcon, 
   ArrowUturnRightIcon,
   ShareIcon,
-  CubeIcon,
   ArrowDownTrayIcon,
   CodeBracketIcon,
   PhotoIcon,
   DocumentTextIcon,
-  DocumentIcon,
   CheckIcon,
   SunIcon,
   MoonIcon,
@@ -16,38 +16,76 @@ import {
   Squares2X2Icon,
   RectangleStackIcon,
   SparklesIcon,
-  Cog6ToothIcon,
   HeartIcon,
+  ChevronRightIcon,
+  ClockIcon,
+  BookmarkIcon,
 } from '@heroicons/react/24/outline';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUIStore } from '@/store/uiStore';
-import { 
-  exportAsPng, 
-  exportAsSvg, 
-  exportAsPdf, 
-  exportAsMarkdown, 
-  exportAsJson,
-  copyShareableLink 
-} from '@/utils/export';
+import { projectsApi, diagramsApi, versionsApi } from '@/services/api';
+import { copyShareableLink } from '@/utils/export';
+import { notify } from '@/services/notify';
 import { SettingsPanel } from '@/components/panels/SettingsPanel';
+import { VersionsPanel } from '@/components/panels/VersionsPanel';
+import { SaveVersionDialog } from '@/components/ui/SaveVersionDialog';
 import { ExportPreviewDialog } from '@/components/ui/ExportPreviewDialog';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { CollaboratorBadges } from '@/components/ui/CollaboratorBadges';
 import { ArchitectureNodeData } from '@/types';
+import { IS_SERVER_MODE } from '@/config/runtime';
+import type { CollaboratorUser } from '@/hooks/useCollaboration';
 
-export function Navbar() {
+interface NavbarProps {
+  collabUsers?: CollaboratorUser[];
+  collabConnected?: boolean;
+}
+
+export function Navbar({ collabUsers = [], collabConnected = false }: NavbarProps) {
+  const { projectId, diagramId } = useParams<{ projectId: string; diagramId: string }>();
+  const navigate = useNavigate();
+
+  const { data: project } = useQuery({
+    queryKey: ['projects', projectId],
+    queryFn: () => projectsApi.get(projectId!),
+    enabled: !!projectId,
+  });
+
+  const { data: diagram } = useQuery({
+    queryKey: ['diagrams', diagramId],
+    queryFn: () => diagramsApi.get(diagramId!),
+    enabled: !!diagramId,
+  });
+
   const { undo, redo, canUndo, canRedo, exportDiagram, applyAutoLayout, nodes, runAllHealthChecks, healthCheckResults } = useDiagramStore();
   const { theme, setTheme } = useThemeStore();
-  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel, edgeStyle, toggleEdgeStyle, addToast } = useUIStore();
+  const { leftPanelVisible, rightPanelVisible, toggleLeftPanel, toggleRightPanel, edgeStyle, toggleEdgeStyle } = useUIStore();
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [layoutDropdownOpen, setLayoutDropdownOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportPreviewOpen, setExportPreviewOpen] = useState(false);
-  const [selectedExportFormat, setSelectedExportFormat] = useState<'png' | 'svg' | 'pdf' | 'json' | 'markdown'>('png');
+  const [selectedExportFormat, setSelectedExportFormat] = useState<'png' | 'svg' | 'pdf' | 'json'>('png');
   const [isTestingHealth, setIsTestingHealth] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [saveVersionOpen, setSaveVersionOpen] = useState(false);
+  const queryClient = useQueryClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const layoutDropdownRef = useRef<HTMLDivElement>(null);
+
+  const saveVersionMutation = useMutation({
+    mutationFn: (label: string) => versionsApi.create(diagramId!, label || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['versions', diagramId] });
+      setSaveVersionOpen(false);
+      notify.success({ title: 'Version saved', message: 'Snapshot added to version history' });
+    },
+    onError: () => {
+      notify.error({ title: 'Failed to save version' });
+    },
+  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -63,7 +101,7 @@ export function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleExport = (type: 'png' | 'svg' | 'pdf' | 'markdown' | 'json') => {
+  const handleExport = (type: 'png' | 'svg' | 'pdf' | 'json') => {
     setSelectedExportFormat(type);
     setExportDropdownOpen(false);
     setExportPreviewOpen(true);
@@ -91,8 +129,7 @@ export function Navbar() {
     );
 
     if (healthCheckNodes.length === 0) {
-      addToast({
-        type: 'warning',
+      notify.warning({
         title: 'No health checks configured',
         message: 'Add health check URLs to nodes in the Properties panel',
         duration: 4000,
@@ -110,23 +147,20 @@ export function Navbar() {
       const totalCount = healthCheckNodes.length;
       
       if (healthyCount === totalCount) {
-        addToast({
-          type: 'success',
+        notify.success({
           title: `All ${totalCount} services healthy ✓`,
           duration: 4000,
         });
       } else {
         const unhealthyCount = totalCount - healthyCount;
-        addToast({
-          type: 'error',
+        notify.error({
           title: `${unhealthyCount}/${totalCount} services unhealthy`,
           message: 'Check the Properties panel for details',
           duration: 5000,
         });
       }
     } catch (error) {
-      addToast({
-        type: 'error',
+      notify.error({
         title: 'Health check failed',
         message: 'An unexpected error occurred',
         duration: 4000,
@@ -157,88 +191,122 @@ export function Navbar() {
   return (
     <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-4 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md z-50">
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 bg-zinc-900 dark:bg-zinc-100 rounded-lg flex items-center justify-center text-zinc-100 dark:text-zinc-950">
-          <CubeIcon className="w-4.5 h-4.5" strokeWidth={2} />
-        </div>
-        <h1 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          ARCH/IO <span className="opacity-40 font-normal ml-1">v2.1</span>
-        </h1>
+        <button
+          onClick={() => navigate('/')}
+          className="h-8 w-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity overflow-hidden"
+        >
+          <img src="/favicon-32x32.png" alt="Arch.io" className="w-full h-full object-contain block dark:hidden" />
+          <img src="/icons-night/favicon-32x32.png" alt="Arch.io" className="w-full h-full object-contain hidden dark:block" />
+        </button>
+        <nav className="flex items-center gap-1 text-sm">
+          <button
+            onClick={() => navigate('/')}
+            className="font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            ARCH/IO
+          </button>
+          {project && (
+            <>
+              <ChevronRightIcon className="w-3 h-3 text-zinc-400" />
+              <button
+                onClick={() => navigate(`/projects/${projectId}`)}
+                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors truncate max-w-[120px]"
+              >
+                {project.name}
+              </button>
+            </>
+          )}
+          {diagram && (
+            <>
+              <ChevronRightIcon className="w-3 h-3 text-zinc-400" />
+              <span className="text-zinc-500 dark:text-zinc-400 truncate max-w-[120px]">
+                {diagram.name}
+              </span>
+            </>
+          )}
+        </nav>
       </div>
 
       <div className="flex items-center gap-4">
         {/* Panel Toggles */}
         <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-1 gap-1">
-          <button 
-            onClick={toggleLeftPanel}
-            className={`p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition-colors ${
-              leftPanelVisible 
-                ? 'text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-800' 
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-            }`}
-            title="Toggle left panel"
-          >
-            <Squares2X2Icon className="w-3.5 h-3.5" />
-          </button>
-          <button 
-            onClick={toggleRightPanel}
-            className={`p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition-colors ${
-              rightPanelVisible 
-                ? 'text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-800' 
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-            }`}
-            title="Toggle right panel"
-          >
-            <RectangleStackIcon className="w-3.5 h-3.5" />
-          </button>
+          <Tooltip content="Components panel">
+            <button 
+              onClick={toggleLeftPanel}
+              className={`p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition-colors ${
+                leftPanelVisible 
+                  ? 'text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-800' 
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+              }`}
+            >
+              <Squares2X2Icon className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip content="Properties panel">
+            <button 
+              onClick={toggleRightPanel}
+              className={`p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition-colors ${
+                rightPanelVisible 
+                  ? 'text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-800' 
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+              }`}
+            >
+              <RectangleStackIcon className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
         </div>
 
         {/* Edge Style Toggle */}
-        <button 
-          onClick={toggleEdgeStyle}
-          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
-          title={`Edge style: ${edgeStyle === 'step' ? 'Square' : 'Curvy'} (click to toggle)`}
-        >
-          {edgeStyle === 'step' ? (
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 12h6v-6h4v12h6" />
-            </svg>
-          ) : (
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 6c4 0 6 12 16 12" />
-            </svg>
-          )}
-        </button>
+        <Tooltip content={`Edge style: ${edgeStyle === 'step' ? 'Square' : 'Curvy'} — click to toggle`}>
+          <button 
+            onClick={toggleEdgeStyle}
+            className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
+          >
+            {edgeStyle === 'step' ? (
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12h6v-6h4v12h6" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 6c4 0 6 12 16 12" />
+              </svg>
+            )}
+          </button>
+        </Tooltip>
 
         {/* Undo/Redo */}
         <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-1 gap-1">
-          <button 
-            onClick={undo}
-            disabled={!canUndo()}
-            className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Undo (⌘Z)"
-          >
-            <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
-          </button>
-          <button 
-            onClick={redo}
-            disabled={!canRedo()}
-            className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Redo (⌘⇧Z)"
-          >
-            <ArrowUturnRightIcon className="w-3.5 h-3.5" />
-          </button>
+          <Tooltip content="Undo (⌘Z)">
+            <button 
+              onClick={undo}
+              disabled={!canUndo()}
+              className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip content="Redo (⌘⇧Z)">
+            <button 
+              onClick={redo}
+              disabled={!canRedo()}
+              className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ArrowUturnRightIcon className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
         </div>
 
         {/* Auto-Layout Dropdown */}
         <div className="relative" ref={layoutDropdownRef}>
-          <button 
-            onClick={() => setLayoutDropdownOpen(!layoutDropdownOpen)}
-            className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
-            title="Auto-arrange layout (⌘L)"
-          >
-            <SparklesIcon className="w-3.5 h-3.5" strokeWidth={2} />
-            Layout
-          </button>
+          <Tooltip content="Auto-arrange layout (⌘L)">
+            <button 
+              onClick={() => setLayoutDropdownOpen(!layoutDropdownOpen)}
+              className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+            >
+              <SparklesIcon className="w-3.5 h-3.5" strokeWidth={2} />
+              Layout
+            </button>
+          </Tooltip>
           
           {/* Layout Dropdown Menu */}
           {layoutDropdownOpen && (
@@ -266,17 +334,41 @@ export function Navbar() {
             </div>
           )}
         </div>
-        
+
+        {/* Version History (server mode only) */}
+        {IS_SERVER_MODE && diagramId && (
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-1 gap-1">
+            <Tooltip content="Save version snapshot">
+              <button
+                onClick={() => setSaveVersionOpen(true)}
+                className="flex items-center gap-1 p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              >
+                <BookmarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+            <Tooltip content="Version history">
+              <button
+                onClick={() => setVersionsOpen(true)}
+                className="flex items-center gap-1.5 p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-xs"
+              >
+                <ClockIcon className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+          </div>
+        )}
+
         {/* Export Dropdown */}
         <div className="relative" ref={dropdownRef}>
-          <button 
-            onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
-            disabled={isExporting}
-            className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-100 dark:text-zinc-900 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50"
-          >
-            <ArrowDownTrayIcon className="w-3.5 h-3.5" strokeWidth={2} />
-            {isExporting ? 'Exporting...' : 'Export'}
-          </button>
+          <Tooltip content="Export diagram">
+            <button 
+              onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+              disabled={isExporting}
+              className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-100 dark:text-zinc-900 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50"
+            >
+              <ArrowDownTrayIcon className="w-3.5 h-3.5" strokeWidth={2} />
+              {isExporting ? 'Exporting...' : 'Export'}
+            </button>
+          </Tooltip>
           
           {/* Dropdown Menu */}
           {exportDropdownOpen && (
@@ -304,13 +396,6 @@ export function Navbar() {
                   <DocumentTextIcon className="w-3.5 h-3.5" />
                   PDF Report
                 </button>
-                <button 
-                  onClick={() => handleExport('markdown')}
-                  className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white rounded-md flex items-center gap-2"
-                >
-                  <DocumentIcon className="w-3.5 h-3.5" />
-                  Markdown
-                </button>
                 <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
                 <button 
                   onClick={() => handleExport('json')}
@@ -325,48 +410,50 @@ export function Navbar() {
         </div>
 
         {/* Test Health Button */}
-        <button 
-          onClick={handleTestHealth}
-          disabled={isTestingHealth}
-          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Test all health checks"
-        >
-          <HeartIcon className={`w-3.5 h-3.5 ${isTestingHealth ? 'animate-pulse' : ''}`} />
-        </button>
+        <Tooltip content="Run health checks">
+          <button 
+            onClick={handleTestHealth}
+            disabled={isTestingHealth}
+            className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <HeartIcon className={`w-3.5 h-3.5 ${isTestingHealth ? 'animate-pulse' : ''}`} />
+          </button>
+        </Tooltip>
 
-        {/* AI Settings */}
-        <button 
-          onClick={() => setSettingsOpen(true)}
-          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
-          title="AI Settings"
-        >
-          <Cog6ToothIcon className="w-3.5 h-3.5" />
-        </button>
+        {/* Collaborators */}
+        {collabUsers.length > 0 && (
+          <div className="flex items-center gap-2 px-2 py-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md">
+            <div className={`w-1.5 h-1.5 rounded-full ${collabConnected ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+            <CollaboratorBadges users={collabUsers} />
+          </div>
+        )}
 
         {/* Theme Toggle */}
-        <button 
-          onClick={cycleTheme}
-          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
-          title={`Theme: ${theme} (click to change)`}
-        >
-          {getThemeIcon()}
-        </button>
+        <Tooltip content={`Theme: ${theme} — click to cycle`}>
+          <button 
+            onClick={cycleTheme}
+            className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors"
+          >
+            {getThemeIcon()}
+          </button>
+        </Tooltip>
 
         {/* Share Button */}
-        <button 
-          onClick={handleShareLink}
-          className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors flex items-center gap-1.5"
-          title="Copy shareable link"
-        >
-          {copiedLink ? (
-            <>
-              <CheckIcon className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs text-emerald-400">Copied!</span>
-            </>
-          ) : (
-            <ShareIcon className="w-3.5 h-3.5" />
-          )}
-        </button>
+        <Tooltip content={copiedLink ? 'Link copied!' : 'Copy shareable link'}>
+          <button 
+            onClick={handleShareLink}
+            className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 p-1.5 rounded-md transition-colors flex items-center gap-1.5"
+          >
+            {copiedLink ? (
+              <>
+                <CheckIcon className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-xs text-emerald-400">Copied!</span>
+              </>
+            ) : (
+              <ShareIcon className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </Tooltip>
       </div>
 
       {/* Settings Modal */}
@@ -378,6 +465,25 @@ export function Navbar() {
         onClose={() => setExportPreviewOpen(false)}
         initialFormat={selectedExportFormat}
       />
+
+      {/* Version History Modal */}
+      {IS_SERVER_MODE && diagramId && (
+        <VersionsPanel
+          isOpen={versionsOpen}
+          onClose={() => setVersionsOpen(false)}
+          diagramId={diagramId}
+        />
+      )}
+
+      {/* Save Version Dialog */}
+      {IS_SERVER_MODE && diagramId && (
+        <SaveVersionDialog
+          isOpen={saveVersionOpen}
+          isSaving={saveVersionMutation.isPending}
+          onSave={(label) => saveVersionMutation.mutate(label)}
+          onClose={() => setSaveVersionOpen(false)}
+        />
+      )}
     </header>
   );
 }

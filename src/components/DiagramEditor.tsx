@@ -2,6 +2,7 @@ import { useCallback, useRef, useEffect, DragEvent, useState } from 'react';
 import {
   ReactFlow,
   useReactFlow,
+  useStoreApi,
   Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -31,13 +32,27 @@ import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
 import { SimulationPanel } from '@/components/panels/SimulationPanel';
 import { ImportDialog } from '@/components/ui/ImportDialog';
 import { LaserPointer } from '@/components/ui/LaserPointer';
+import { CollaboratorCursors } from '@/components/ui/CollaboratorCursors';
 import { useSimulationAnimation } from '@/hooks/useSimulationAnimation';
 import { useDestroyAnimation } from '@/hooks/useDestroyAnimation';
 import { useChaosSimulation } from '@/hooks/useChaosSimulation';
+import type { RemoteCursor } from '@/hooks/useCollaboration';
 
-export function DiagramEditor() {
+interface DiagramEditorProps {
+  remoteCursors?: RemoteCursor[];
+  sendCursorUpdate?: (cursor: { x: number; y: number } | null) => void;
+  myColor?: string;
+}
+
+export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramEditorProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null!);
-  const { screenToFlowPosition, zoomIn, zoomOut, getZoom, getIntersectingNodes } = useReactFlow();
+  // rAF throttling for collab cursor broadcasts — without this, mousemove
+  // (which fires constantly during a drag) triggers a websocket emit per
+  // event and re-renders downstream cursor components, causing drag lag.
+  const cursorRafRef = useRef<number | null>(null);
+  const latestCursorScreenPosRef = useRef<{ x: number; y: number } | null>(null);
+  const { screenToFlowPosition, flowToScreenPosition, zoomIn, zoomOut, getZoom, getIntersectingNodes } = useReactFlow();
+  const rfStore = useStoreApi();
   const [zoom, setZoom] = useState(100);
   const [panMode, setPanMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
@@ -69,7 +84,6 @@ export function DiagramEditor() {
     addNode,
     setSelectedNode,
     setSelectedEdge,
-    loadDiagram,
     deleteSelectedNodes,
     duplicateNodes,
     addNodeToGroup,
@@ -79,24 +93,25 @@ export function DiagramEditor() {
     hasClipboardContent,
   } = useDiagramStore();
 
-  // Load saved diagram on mount
-  useEffect(() => {
-    loadDiagram();
-  }, [loadDiagram]);
-
-  // Prevent default context menu on the diagram
+  // Prevent default context menu on the diagram.
+  // NOTE: dependencies are intentionally empty — we read the latest store
+  // state via `useDiagramStore.getState()` inside the handler so this effect
+  // doesn't re-register on every node change (which happens on every drag
+  // tick and caused noticeable input lag).
   useEffect(() => {
     const preventContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       // Only prevent if clicking on the React Flow canvas
       if (target.closest('.react-flow')) {
         e.preventDefault();
-        
-        const selectedNodes = nodes.filter(n => n.selected);
-        const hasClipboard = hasClipboardContent();
-        
+
+        const { nodes: currentNodes, hasClipboardContent: hasClipboardFn } =
+          useDiagramStore.getState();
+        const hasSelected = currentNodes.some((n) => n.selected);
+        const hasClipboard = hasClipboardFn();
+
         // Show context menu if there are selected nodes or clipboard has content
-        if (selectedNodes.length > 0 || hasClipboard) {
+        if (hasSelected || hasClipboard) {
           setContextMenu({
             x: e.clientX,
             y: e.clientY,
@@ -108,7 +123,7 @@ export function DiagramEditor() {
 
     document.addEventListener('contextmenu', preventContextMenu);
     return () => document.removeEventListener('contextmenu', preventContextMenu);
-  }, [nodes, hasClipboardContent]);
+  }, []);
 
   // Helper function to add node at viewport center
   const addNodeAtCenter = useCallback((type: ArchitectureNodeType | string) => {
@@ -369,14 +384,26 @@ export function DiagramEditor() {
         
         // Only update if not already parented to this group
         if (node.parentId !== targetGroup.id) {
-          addNodeToGroup(node.id, targetGroup.id);
+          // Use React Flow's internal nodeLookup to get authoritative positionAbsolute
+          // values for both nodes. This is more reliable than node.position from the
+          // callback or the Zustand store, which can both be stale at this point.
+          const { nodeLookup } = rfStore.getState();
+          const internalNode = nodeLookup.get(node.id);
+          const internalGroup = nodeLookup.get(targetGroup.id);
+          const nodeAbsPos = internalNode?.internals.positionAbsolute ?? node.position;
+          const groupAbsPos = internalGroup?.internals.positionAbsolute ?? targetGroup.position;
+          const relativePosition = {
+            x: nodeAbsPos.x - groupAbsPos.x,
+            y: nodeAbsPos.y - groupAbsPos.y,
+          };
+          addNodeToGroup(node.id, targetGroup.id, relativePosition);
         }
       } else if (node.parentId && !node.extent) {
         // Only remove from group if node doesn't have extent constraint
         removeNodeFromGroup(node.id);
       }
     },
-    [nodes, addNodeToGroup, removeNodeFromGroup, getIntersectingNodes]
+    [nodes, addNodeToGroup, removeNodeFromGroup, getIntersectingNodes, rfStore]
   );
 
   // Keyboard shortcuts
@@ -814,8 +841,33 @@ export function DiagramEditor() {
       )}
 
       {/* React Flow Canvas */}
-      <div ref={reactFlowWrapper} className={cn('w-full h-full', laserMode && 'cursor-none')}>
+      <div
+        ref={reactFlowWrapper}
+        className={cn('w-full h-full', laserMode && 'cursor-none')}
+        onMouseMove={(e) => {
+          if (!sendCursorUpdate) return;
+          latestCursorScreenPosRef.current = { x: e.clientX, y: e.clientY };
+          if (cursorRafRef.current !== null) return;
+          cursorRafRef.current = requestAnimationFrame(() => {
+            cursorRafRef.current = null;
+            const pos = latestCursorScreenPosRef.current;
+            if (!pos) return;
+            // Send in flow (world) coordinates so it's viewport-independent
+            const flowPos = screenToFlowPosition(pos);
+            sendCursorUpdate(flowPos);
+          });
+        }}
+        onMouseLeave={() => {
+          if (cursorRafRef.current !== null) {
+            cancelAnimationFrame(cursorRafRef.current);
+            cursorRafRef.current = null;
+          }
+          latestCursorScreenPosRef.current = null;
+          sendCursorUpdate?.(null);
+        }}
+      >
         <LaserPointer active={laserMode} containerRef={reactFlowWrapper} />
+        <CollaboratorCursors cursors={remoteCursors} flowToScreenPosition={flowToScreenPosition} containerRef={reactFlowWrapper} />
         <ReactFlow
           nodes={nodes}
           edges={edges}
