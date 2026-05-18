@@ -6,6 +6,8 @@ import './index.css';
 import App from './App.tsx';
 import { ProjectsPage } from './pages/ProjectsPage.tsx';
 import { ProjectPage } from './pages/ProjectPage.tsx';
+import { MobileLandingPage } from './pages/MobileLandingPage.tsx';
+import { useIsMobile } from './hooks/useIsMobile.ts';
 import { IS_SERVER_MODE } from '@/config/runtime';
 
 const queryClient = new QueryClient({
@@ -14,28 +16,40 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppRouter() {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobileLandingPage />;
+  }
+
+  return (
+    <Routes>
+      {IS_SERVER_MODE ? (
+        <>
+          <Route path="/" element={<ProjectsPage />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route
+            path="/projects/:projectId/diagrams/:diagramId"
+            element={<App />}
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+      ) : (
+        <>
+          <Route path="/" element={<App />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+      )}
+    </Routes>
+  );
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          {IS_SERVER_MODE ? (
-            <>
-              <Route path="/" element={<ProjectsPage />} />
-              <Route path="/projects/:projectId" element={<ProjectPage />} />
-              <Route
-                path="/projects/:projectId/diagrams/:diagramId"
-                element={<App />}
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          ) : (
-            <>
-              <Route path="/" element={<App />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          )}
-        </Routes>
+        <AppRouter />
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>
