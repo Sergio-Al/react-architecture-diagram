@@ -42,6 +42,7 @@ Built with React 19, React Flow, GSAP, and a NestJS backend for multi-project wo
   - Step-by-step debugger mode (forward/backward)
   - Round-trip animation (request → response)
   - Real-time stats: total hops, protocols used, path length, total latency, bottleneck detection
+  - **Sequence-diagram export** — generate a Mermaid `sequenceDiagram` from the traced path (sync vs. async arrows, protocol/method/schema/latency labels); copy, download as Markdown, or open in mermaid.live
 - **Failure Simulation** — Mark nodes as failed and visualize cascading impact
   - Click nodes to toggle failure state (red pulsing glow)
   - Automatic blast radius computation (BFS downstream)
