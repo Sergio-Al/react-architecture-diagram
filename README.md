@@ -96,6 +96,7 @@ Built with React 19, React Flow, GSAP, and a NestJS backend for multi-project wo
 - **Import Modes** — Replace, merge, or append diagrams with conflict resolution
 - **Auto-Save** — Persists to localStorage automatically
 - **Undo/Redo** — Full history support
+- **Getting-Started Checklist** — A dismissible onboarding card that ticks off your first node, connection, data contract, and flow simulation as you do them (auto-hidden once complete; skipped for diagrams that already have content)
 - **Dark/Light Mode** — Theme toggle with system preference support
 
 ## 🚀 Quick Start

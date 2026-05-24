@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Icon as IconifyIcon } from '@iconify/react';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useAnimationStore } from '@/store/animationStore';
+import { useOnboardingStore } from '@/store/onboardingStore';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType, DataFormat, CommentNodeData, CommentColor } from '@/types';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,7 @@ export function PropertiesPanel() {
   } = useDiagramStore();
 
   const requestDelete = useAnimationStore((s) => s.requestDelete);
+  const onboardingActiveStep = useOnboardingStore((s) => s.activeStep);
 
   const [isTestingHealth, setIsTestingHealth] = useState(false);
 
@@ -990,7 +992,12 @@ export function PropertiesPanel() {
           <hr className="border-zinc-200 dark:border-zinc-800" />
 
           {/* Data Contract Section */}
-          <div className="space-y-4">
+          <div
+            className={cn(
+              'space-y-4 rounded-lg',
+              onboardingActiveStep === 'set-contract' && 'onboarding-pulse p-2 -m-2'
+            )}
+          >
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
                 Data Contract

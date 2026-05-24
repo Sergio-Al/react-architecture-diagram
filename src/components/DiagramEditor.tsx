@@ -32,12 +32,15 @@ import {
 import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
 import { SimulationPanel } from '@/components/panels/SimulationPanel';
+import { GettingStartedChecklist } from '@/components/panels/GettingStartedChecklist';
 import { ImportDialog } from '@/components/ui/ImportDialog';
 import { LaserPointer } from '@/components/ui/LaserPointer';
 import { CollaboratorCursors } from '@/components/ui/CollaboratorCursors';
 import { useSimulationAnimation } from '@/hooks/useSimulationAnimation';
 import { useDestroyAnimation } from '@/hooks/useDestroyAnimation';
 import { useChaosSimulation } from '@/hooks/useChaosSimulation';
+import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
+import { useOnboardingStore } from '@/store/onboardingStore';
 import type { RemoteCursor } from '@/hooks/useCollaboration';
 
 interface DiagramEditorProps {
@@ -76,6 +79,9 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
   useSimulationAnimation();
   useDestroyAnimation();
   useChaosSimulation();
+  // Track getting-started checklist progress
+  useOnboardingProgress();
+  const onboardingActiveStep = useOnboardingStore((s) => s.activeStep);
   
   const {
     nodes,
@@ -657,7 +663,10 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
   }, [nodes, deleteSelectedNodes, duplicateNodes, addNodeAtCenter]);
 
   return (
-    <div className="flex-1 relative bg-white dark:bg-zinc-950 overflow-hidden">
+    <div
+      className="flex-1 relative bg-white dark:bg-zinc-950 overflow-hidden"
+      data-onboarding-pulse={onboardingActiveStep === 'connect-nodes' ? 'connect-nodes' : undefined}
+    >
       {/* Grid Background */}
       <div className="absolute inset-0 bg-grid-pattern opacity-50 dark:opacity-60 pointer-events-none z-0" />
 
@@ -844,7 +853,8 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
             'p-2 rounded-full transition-colors',
             showSimulationPanel
               ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-              : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+              : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100',
+            onboardingActiveStep === 'run-flow-sim' && 'onboarding-pulse text-amber-600 dark:text-amber-400'
           )}
           title="Simulation Mode (Shift+S)"
         >
@@ -938,6 +948,9 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
           simulationSetMode('idle');
         }} />
       )}
+
+      {/* Getting-started onboarding checklist (hidden while the sim bar is up) */}
+      <GettingStartedChecklist hidden={showSimulationPanel} />
     </div>
   );
 }
