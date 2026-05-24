@@ -2,13 +2,16 @@
  * SimulationPanel — A floating overlay control bar for simulation mode.
  * Positioned at the bottom-center of the canvas.
  */
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useDiagramStore } from '@/store/diagramStore';
 import { traceFlowPath, computeBlastRadius } from '@/utils/graphTraversal';
+import { flowPathToMermaidSequence } from '@/utils/sequenceDiagram';
 import type { SimulationSpeed, ChaosSubMode } from '@/types/simulation';
 import { SimulationStats } from './SimulationStats';
 import { ChaosEventLog } from './ChaosEventLog';
+import { SequenceDiagramDialog } from '@/components/ui/SequenceDiagramDialog';
 import {
   PlayIcon,
   PauseIcon,
@@ -23,6 +26,7 @@ import {
   ArrowPathIcon,
   FireIcon,
   ListBulletIcon,
+  Bars3BottomLeftIcon,
 } from '@heroicons/react/24/outline';
 
 const SPEED_OPTIONS: SimulationSpeed[] = [0.25, 0.5, 1, 2, 4];
@@ -73,6 +77,9 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
   const nodes = useDiagramStore((s) => s.nodes);
   const edges = useDiagramStore((s) => s.edges);
 
+  // Sequence-diagram dialog (generated on demand from the traced flow path)
+  const [sequenceSource, setSequenceSource] = useState<string | null>(null);
+
   // Get source node label for display
   const sourceNode = sourceNodeId
     ? nodes.find((n) => n.id === sourceNodeId)
@@ -117,6 +124,14 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
         pause();
       }
     }
+  };
+
+  const handleShowSequence = () => {
+    if (!sourceNodeId) return;
+    const path = traceFlowPath(nodes, edges, sourceNodeId);
+    setSequenceSource(
+      flowPathToMermaidSequence(nodes, edges, path, { title: sourceLabel ?? undefined })
+    );
   };
 
   const handleClose = () => {
@@ -168,7 +183,7 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
   };
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
+    <div className="absolute bottom-6 inset-x-0 z-50 flex flex-col items-center px-2">
       {/* Chaos event log (rendered above everything) */}
       {mode === 'chaos' && showChaosLog && (
         <ChaosEventLog />
@@ -179,7 +194,7 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
         <SimulationStats />
       )}
 
-      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl shadow-black/20 dark:shadow-black/60 px-4 py-3 flex items-center gap-3 min-w-[480px]">
+      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl shadow-black/20 dark:shadow-black/60 px-4 py-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 max-w-full">
         {/* Simulation indicator */}
         <div className="flex items-center gap-1.5">
           <BoltIcon className={cn(
@@ -367,6 +382,22 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
                 RT
               </button>
             )}
+
+            {/* Sequence-diagram export from the traced flow */}
+            <button
+              onClick={handleShowSequence}
+              disabled={!sourceNodeId}
+              className={cn(
+                'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1',
+                !sourceNodeId
+                  ? 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed'
+                  : 'text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30'
+              )}
+              title="Generate a Mermaid sequence diagram from the traced flow"
+            >
+              <Bars3BottomLeftIcon className="w-3 h-3" />
+              Seq
+            </button>
           </>
         )}
 
@@ -455,7 +486,7 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
         <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800" />
 
         {/* Status text */}
-        <span className="text-xs text-zinc-500 dark:text-zinc-400 flex-1 truncate min-w-0">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400 flex-1 truncate min-w-[10rem] text-center">
           {getStatusText()}
         </span>
 
@@ -484,6 +515,13 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
           <XMarkIcon className="w-4 h-4" />
         </button>
       </div>
+
+      <SequenceDiagramDialog
+        isOpen={sequenceSource !== null}
+        source={sequenceSource ?? ''}
+        title={sourceLabel ?? undefined}
+        onClose={() => setSequenceSource(null)}
+      />
     </div>
   );
 }

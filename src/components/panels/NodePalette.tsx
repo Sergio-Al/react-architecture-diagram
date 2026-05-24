@@ -4,6 +4,7 @@ import { ArchitectureNodeType, GroupNodeType } from '@/types';
 import { cn } from '@/lib/utils';
 import { MagnifyingGlassIcon, UserCircleIcon, Squares2X2Icon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 // Group configuration for node categories with shortcuts
 const NODE_CATEGORIES = {
@@ -58,6 +59,7 @@ const GROUP_CATEGORIES: GroupNodeType[] = ['vpc', 'cluster', 'region', 'subnet']
 
 export function NodePalette() {
   const [searchQuery, setSearchQuery] = useState('');
+  const onboardingActiveStep = useOnboardingStore((s) => s.activeStep);
 
   // Filter regular nodes
   const filteredCategories = Object.entries(NODE_CATEGORIES).reduce((acc, [category, types]) => {
@@ -89,7 +91,12 @@ export function NodePalette() {
     'note'.includes(searchQuery.toLowerCase());
 
   return (
-    <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col z-20">
+    <aside
+      className={cn(
+        'w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col z-20',
+        onboardingActiveStep === 'add-node' && 'onboarding-pulse'
+      )}
+    >
       {/* Search */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
         <div className="relative">

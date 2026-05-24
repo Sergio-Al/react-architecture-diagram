@@ -268,6 +268,31 @@ input[type=range]::-webkit-slider-runnable-track {
   background: var(--handle-hover) !important;
 }
 
+/* Onboarding guidance pulses — draw attention to the element for the active step */
+@keyframes onboardingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45); }
+  50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
+@keyframes onboardingHandlePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.55); }
+  50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0); }
+}
+.onboarding-pulse {
+  animation: onboardingPulse 1.6s ease-in-out infinite;
+}
+/* When the "connect two nodes" step is active, pulse every node handle so it's
+   obvious the dots are draggable. */
+[data-onboarding-pulse='connect-nodes'] .react-flow__handle {
+  background: var(--handle-hover) !important;
+  animation: onboardingHandlePulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-pulse,
+  [data-onboarding-pulse='connect-nodes'] .react-flow__handle {
+    animation: none;
+  }
+}
+
 /* Animation utility classes */
 .animate-slide-in {
   animation: var(--animate-slide-in);
