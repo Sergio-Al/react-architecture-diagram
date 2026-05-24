@@ -43,6 +43,8 @@ export interface LandingFeature {
   accentText: string;
   accentBg: string;
   accentBorder: string;
+  /** Raw accent hex — drives the hover border-flow light (see `FeatureCard`). */
+  accentHex: string;
 }
 
 export const FEATURES: LandingFeature[] = [
@@ -53,6 +55,7 @@ export const FEATURES: LandingFeature[] = [
     accentText: 'text-blue-400',
     accentBg: 'bg-blue-500/10',
     accentBorder: 'border-blue-500/20',
+    accentHex: '#60a5fa',
   },
   {
     icon: BoltIcon,
@@ -61,6 +64,7 @@ export const FEATURES: LandingFeature[] = [
     accentText: 'text-amber-400',
     accentBg: 'bg-amber-500/10',
     accentBorder: 'border-amber-500/20',
+    accentHex: '#fbbf24',
   },
   {
     icon: UsersIcon,
@@ -69,6 +73,7 @@ export const FEATURES: LandingFeature[] = [
     accentText: 'text-violet-400',
     accentBg: 'bg-violet-500/10',
     accentBorder: 'border-violet-500/20',
+    accentHex: '#a78bfa',
   },
   {
     icon: ArrowDownTrayIcon,
@@ -77,6 +82,7 @@ export const FEATURES: LandingFeature[] = [
     accentText: 'text-emerald-400',
     accentBg: 'bg-emerald-500/10',
     accentBorder: 'border-emerald-500/20',
+    accentHex: '#34d399',
   },
 ];
 
@@ -103,13 +109,15 @@ export interface SimMode {
   desc: string;
   /** Hex used for the indicator dot / glow. */
   color: string;
+  /** Which mini-preview animation to play on hover (see `SimModePreview`). */
+  kind: 'flow' | 'cascade' | 'partition' | 'chaos';
 }
 
 export const SIM_MODES: SimMode[] = [
-  { title: 'Flow tracing', desc: 'Watch a request animate hop-by-hop across services, colored by protocol.', color: '#fbbf24' },
-  { title: 'Failure cascade', desc: 'Fail a node and see the blast radius ripple downstream in real time.', color: '#f87171' },
-  { title: 'Network partition', desc: 'Sever the graph and find which services get stranded.', color: '#c084fc' },
-  { title: 'Chaos engineering', desc: 'Inject random failures and recoveries to validate resilience.', color: '#34d399' },
+  { kind: 'flow', title: 'Flow tracing', desc: 'Watch a request animate hop-by-hop across services, colored by protocol.', color: '#fbbf24' },
+  { kind: 'cascade', title: 'Failure cascade', desc: 'Fail a node and see the blast radius ripple downstream in real time.', color: '#f87171' },
+  { kind: 'partition', title: 'Network partition', desc: 'Sever the graph and find which services get stranded.', color: '#c084fc' },
+  { kind: 'chaos', title: 'Chaos engineering', desc: 'Inject random failures and recoveries to validate resilience.', color: '#34d399' },
 ];
 
 /** Wire protocols you can attach to edges, with their design-system colors. */

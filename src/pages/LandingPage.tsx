@@ -9,13 +9,19 @@
  * Content (features, use cases, copy) is shared with the mobile page via
  * `@/constants/landing` so the two surfaces stay in sync.
  */
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRightIcon,
   ArrowTopRightOnSquareIcon,
   CheckIcon,
 } from '@heroicons/react/24/outline';
+import { cn } from '@/lib/utils';
 import { HeroDiagram } from '@/components/landing/HeroDiagram';
+import { Reveal } from '@/components/landing/Reveal';
+import { FeatureCard } from '@/components/landing/FeatureCard';
+import { SimModeCard } from '@/components/landing/SimModePreview';
+import { LogoMarquee } from '@/components/landing/LogoMarquee';
 import {
   BRAND,
   EDITOR_PATH,
@@ -46,11 +52,32 @@ function Logo() {
 }
 
 export function LandingPage() {
+  // Header tightens (stronger blur/border, shorter) once scrolled past the hero top.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 antialiased">
       {/* ── Nav ──────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-zinc-900/80 bg-zinc-950/70 backdrop-blur-md">
-        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+      <header
+        className={cn(
+          'sticky top-0 z-50 border-b backdrop-blur-md transition-colors duration-300',
+          scrolled
+            ? 'border-zinc-800 bg-zinc-950/90 shadow-lg shadow-black/30'
+            : 'border-zinc-900/80 bg-zinc-950/70',
+        )}
+      >
+        <nav
+          className={cn(
+            'mx-auto flex max-w-6xl items-center justify-between px-6 transition-all duration-300',
+            scrolled ? 'h-14' : 'h-16',
+          )}
+        >
           <div className="flex items-center gap-2.5">
             <img src="/icons-night/android-chrome-192x192.png" alt="" className="h-7 w-7" />
             <Logo />
@@ -94,7 +121,7 @@ export function LandingPage() {
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-zinc-400">
             Capture not just{' '}
             <span className="font-medium text-zinc-200">{BRAND.whatLabel}</span> components exist, but{' '}
-            <span className="font-medium text-zinc-200">{BRAND.howLabel}</span> between them — with animated
+            <span className="flow-shimmer font-semibold">{BRAND.howLabel}</span> between them — with animated
             simulation, failure &amp; chaos testing, and data contracts on every edge.
           </p>
 
@@ -146,7 +173,7 @@ export function LandingPage() {
 
       {/* ── What vs How ──────────────────────────────── */}
       <section className="border-y border-zinc-900 bg-zinc-950">
-        <div className="mx-auto grid max-w-5xl gap-px overflow-hidden rounded-xl md:grid-cols-2">
+        <Reveal stagger className="mx-auto grid max-w-5xl gap-px overflow-hidden rounded-xl md:grid-cols-2">
           <div className="bg-zinc-900/40 p-8">
             <p className="text-xs font-medium uppercase tracking-widest text-zinc-500">Most tools stop at</p>
             <p className="mt-3 text-2xl font-semibold text-zinc-300">
@@ -165,39 +192,33 @@ export function LandingPage() {
               behaves like the system it describes.
             </p>
           </div>
-        </div>
+        </Reveal>
       </section>
+
+      {/* ── Tech-stack marquee ───────────────────────── */}
+      <LogoMarquee />
 
       {/* ── Features ─────────────────────────────────── */}
       <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
             Everything you need to design with confidence
           </h2>
           <p className="mt-4 text-zinc-400">
             From the first box to a full resilience review — without leaving the canvas.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map(({ icon: Icon, title, desc, accentText, accentBg, accentBorder }) => (
-            <div
-              key={title}
-              className="group rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
-            >
-              <div className={`inline-flex rounded-lg border p-2.5 ${accentBg} ${accentBorder}`}>
-                <Icon className={`h-5 w-5 ${accentText}`} />
-              </div>
-              <h3 className="mt-4 text-base font-semibold text-zinc-100">{title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{desc}</p>
-            </div>
+        <Reveal stagger className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((feature) => (
+            <FeatureCard key={feature.title} feature={feature} />
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Simulation showcase ──────────────────────── */}
       <section id="simulation" className="scroll-mt-20 border-y border-zinc-900 bg-zinc-900/20">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-24 lg:grid-cols-2">
+        <Reveal stagger className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-24 lg:grid-cols-2">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
@@ -208,21 +229,13 @@ export function LandingPage() {
             </h2>
             <p className="mt-4 leading-relaxed text-zinc-400">
               Trace a request through the graph, fail a node and watch the blast radius, or unleash chaos to
-              see what survives. Every animation runs on your real diagram.
+              see what survives. Every animation runs on your real diagram —{' '}
+              <span className="text-zinc-300">hover a mode to preview it</span>.
             </p>
 
             <div className="mt-8 space-y-3">
               {SIM_MODES.map((m) => (
-                <div key={m.title} className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
-                  <span
-                    className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: m.color, boxShadow: `0 0 12px ${m.color}` }}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-zinc-100">{m.title}</p>
-                    <p className="text-sm leading-snug text-zinc-500">{m.desc}</p>
-                  </div>
-                </div>
+                <SimModeCard key={m.title} mode={m} />
               ))}
             </div>
           </div>
@@ -246,21 +259,24 @@ export function LandingPage() {
               ))}
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Use cases ────────────────────────────────── */}
       <section id="use-cases" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
             Built for the way teams actually work
           </h2>
           <p className="mt-4 text-zinc-400">One canvas, from kickoff to incident review.</p>
-        </div>
+        </Reveal>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Reveal stagger className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {USE_CASES.map(({ icon: Icon, label, desc }) => (
-            <div key={label} className="flex items-start gap-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+            <div
+              key={label}
+              className="flex items-start gap-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-zinc-700 hover:bg-zinc-900"
+            >
               <div className="rounded-lg bg-zinc-800/80 p-2.5 text-zinc-300">
                 <Icon className="h-5 w-5" />
               </div>
@@ -270,13 +286,13 @@ export function LandingPage() {
               </div>
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Final CTA ────────────────────────────────── */}
       <section className="relative overflow-hidden border-t border-zinc-900">
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/10 blur-[120px]" />
-        <div className="relative mx-auto max-w-3xl px-6 py-28 text-center">
+        <Reveal className="relative mx-auto max-w-3xl px-6 py-28 text-center">
           <h2 className="text-balance text-4xl font-semibold tracking-tight text-zinc-50 sm:text-5xl">
             Map your system. Then make it flow.
           </h2>
@@ -292,7 +308,7 @@ export function LandingPage() {
               <ArrowTopRightOnSquareIcon className="h-4 w-4" />
             </Link>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Footer ───────────────────────────────────── */}

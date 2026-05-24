@@ -5,12 +5,13 @@
  */
 import gsap from 'gsap';
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 
 // Register plugins once at module load
-gsap.registerPlugin(MotionPathPlugin);
+gsap.registerPlugin(MotionPathPlugin, ScrollTrigger);
 
 // Register GSAP for React (suppresses useLayoutEffect warnings in SSR)
 gsap.registerPlugin(useGSAP);
 
-export { gsap, MotionPathPlugin, useGSAP };
+export { gsap, MotionPathPlugin, ScrollTrigger, useGSAP };
