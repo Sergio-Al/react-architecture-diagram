@@ -304,6 +304,84 @@ input[type=range]::-webkit-slider-runnable-track {
   filter: drop-shadow(0 0 4px #60a5fa);
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Landing-page effects
+   "Everything flows": a traveling border light on cards, a shimmer across the
+   value-prop text, and an infinite tech-stack marquee. All disabled under
+   prefers-reduced-motion below.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Border-flow: a conic-gradient arc rotates around a card edge. The mask keeps
+   only a thin ring (the padding), so the gradient reads as a traveling border
+   light. `--bf-color` is set per-card to its accent. */
+@property --bf-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes bf-spin {
+  to { --bf-angle: 360deg; }
+}
+.border-flow {
+  background: conic-gradient(
+    from var(--bf-angle),
+    transparent 0deg 280deg,
+    var(--bf-color, #60a5fa) 330deg,
+    transparent 360deg
+  );
+  padding: 1.5px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: bf-spin 3s linear infinite;
+}
+
+/* Flow shimmer: a slow gradient sweep across the "how data flows" phrase. */
+@keyframes flow-shimmer {
+  to { background-position: 200% center; }
+}
+.flow-shimmer {
+  background: linear-gradient(90deg, #93c5fd, #67e8f9, #93c5fd, #67e8f9, #93c5fd);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: flow-shimmer 4s linear infinite;
+}
+
+/* Tech-stack marquee: track is duplicated, so a -50% shift loops seamlessly. */
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 45s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+.marquee-mask {
+  -webkit-mask: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+          mask: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .border-flow,
+  .flow-shimmer,
+  .marquee-track {
+    animation: none;
+  }
+  /* Keep the value-prop legible without the gradient animation. */
+  .flow-shimmer {
+    -webkit-text-fill-color: #93c5fd;
+    color: #93c5fd;
+  }
+}
+
 /* Sileo viewport layering and shadow alignment */
 [data-sileo-viewport] {
   z-index: 60;
