@@ -1,52 +1,12 @@
 import { useState } from 'react';
 import {
-  CubeTransparentIcon,
-  BoltIcon,
-  UsersIcon,
-  ArrowDownTrayIcon,
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
   CheckIcon,
-  AcademicCapIcon,
-  DocumentTextIcon,
-  BeakerIcon,
-  MagnifyingGlassIcon,
-  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
+import { APP_URL, FEATURES, USE_CASES } from '@/constants/landing';
 
-const APP_URL = 'https://arch-io-xi.vercel.app';
 const PREVIEW_VIDEO_URL = import.meta.env.VITE_PREVIEW_VIDEO_URL || '';
-
-const FEATURES = [
-  {
-    icon: CubeTransparentIcon,
-    title: 'Visual Builder',
-    desc: 'Drag & drop 20+ node types across services, cloud, and AI/ML',
-  },
-  {
-    icon: BoltIcon,
-    title: 'Failure Simulation',
-    desc: 'Chaos engineering, cascade analysis, and blast radius',
-  },
-  {
-    icon: UsersIcon,
-    title: 'Collaboration',
-    desc: 'Real-time multi-user editing with live cursors',
-  },
-  {
-    icon: ArrowDownTrayIcon,
-    title: 'Export Anywhere',
-    desc: 'PNG, SVG, PDF, JSON & Markdown — or shareable links',
-  },
-];
-
-const USE_CASES = [
-  { icon: AcademicCapIcon,    label: 'Onboarding',          desc: 'Help new developers understand the system visually' },
-  { icon: DocumentTextIcon,   label: 'API Documentation',   desc: 'Data contracts live alongside the diagram' },
-  { icon: MagnifyingGlassIcon,label: 'System Review',       desc: 'Trace data flow through services end-to-end' },
-  { icon: PencilSquareIcon,   label: 'Architecture Design', desc: 'Plan new features with clear integration points' },
-  { icon: BeakerIcon,         label: 'Resilience Testing',  desc: 'Simulate failures and chaos to validate architecture' },
-];
 
 export function MobileLandingPage() {
   const [copied, setCopied] = useState(false);
