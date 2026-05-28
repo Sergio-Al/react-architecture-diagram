@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect, DragEvent, useState } from 'react';
 import {
   ReactFlow,
+  MiniMap,
   useReactFlow,
   useStoreApi,
   Node,
@@ -10,6 +11,7 @@ import '@xyflow/react/dist/style.css';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useAnimationStore } from '@/store/animationStore';
+import { useUIStore } from '@/store/uiStore';
 import { nodeTypes } from '@/components/nodes';
 import { edgeTypes } from '@/components/edges';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
@@ -33,6 +35,11 @@ import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
 import { SimulationPanel } from '@/components/panels/SimulationPanel';
 import { GettingStartedChecklist } from '@/components/panels/GettingStartedChecklist';
+import { DiagramInfoCard } from '@/components/panels/DiagramInfoCard';
+import { ProtocolLegend } from '@/components/panels/ProtocolLegend';
+import { NodeDetailPopup } from '@/components/panels/NodeDetailPopup';
+import { CanvasStatusBar } from '@/components/panels/CanvasStatusBar';
+import { SpotlightSearch } from '@/components/panels/SpotlightSearch';
 import { ImportDialog } from '@/components/ui/ImportDialog';
 import { LaserPointer } from '@/components/ui/LaserPointer';
 import { CollaboratorCursors } from '@/components/ui/CollaboratorCursors';
@@ -42,6 +49,35 @@ import { useChaosSimulation } from '@/hooks/useChaosSimulation';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { useOnboardingStore } from '@/store/onboardingStore';
 import type { RemoteCursor } from '@/hooks/useCollaboration';
+
+// MiniMap node colors — Tailwind-500 palette per node type. Kept here (not
+// in NODE_TYPES_CONFIG) because NODE_TYPES_CONFIG uses Tailwind class names,
+// while the MiniMap needs raw hex values.
+const MINIMAP_NODE_COLORS: Record<string, string> = {
+  service: '#3b82f6',
+  database: '#10b981',
+  queue: '#f59e0b',
+  cache: '#ef4444',
+  gateway: '#a855f7',
+  external: '#64748b',
+  storage: '#06b6d4',
+  client: '#ec4899',
+  lambda: '#f97316',
+  loadbalancer: '#6366f1',
+  cdn: '#0ea5e9',
+  auth: '#8b5cf6',
+  container: '#64748b',
+  dns: '#84cc16',
+  llm: '#d946ef',
+  vectordb: '#14b8a6',
+  mlpipeline: '#ec4899',
+  embedding: '#f43f5e',
+  secrets: '#eab308',
+  eventbus: '#f97316',
+  datalake: '#06b6d4',
+  search: '#f59e0b',
+  notification: '#ef4444',
+};
 
 interface DiagramEditorProps {
   remoteCursors?: RemoteCursor[];
@@ -580,6 +616,13 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
         return;
       }
 
+      // Spotlight: Cmd/Ctrl + K
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        useUIStore.getState().setSpotlightOpen(true);
+        return;
+      }
+
       // Toggle simulation panel: Shift+S
       if (event.shiftKey && event.key === 'S' && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
@@ -935,8 +978,30 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
           zoomOnPinch
           multiSelectionKeyCode="Shift"
           deleteKeyCode={null}
-        />
+        >
+          <MiniMap
+            pannable
+            zoomable
+            nodeStrokeWidth={2}
+            maskColor="rgb(9 9 11 / 0.6)"
+            className="!bg-white/90 dark:!bg-zinc-900/80 backdrop-blur-md !border !border-zinc-200 dark:!border-zinc-800 !rounded-lg shadow-lg !right-4 !bottom-4"
+            style={{ width: 180, height: 120 }}
+            nodeColor={(node) => {
+              if (node.type === 'group') return 'rgb(82 82 91 / 0.4)';
+              if (node.type === 'comment') return '#fbbf24';
+              const t = (node.data as { type?: string } | undefined)?.type;
+              return (t && MINIMAP_NODE_COLORS[t]) || '#3f3f46';
+            }}
+          />
+        </ReactFlow>
       </div>
+
+      {/* Canvas overlays — diagram info, protocol legend, node detail, status bar */}
+      <DiagramInfoCard />
+      <ProtocolLegend />
+      <NodeDetailPopup />
+      <CanvasStatusBar />
+      <SpotlightSearch />
 
       {/* Animation overlay for shatter/destroy effects */}
       <div id="animation-overlay" className="fixed inset-0 pointer-events-none z-[100]" />

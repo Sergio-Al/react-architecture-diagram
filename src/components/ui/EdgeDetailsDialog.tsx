@@ -5,9 +5,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { ArchitectureEdgeData } from '@/types';
+import { ArchitectureEdgeData, DataContract } from '@/types';
 import { PROTOCOL_CONFIG } from '@/constants';
 import { cn } from '@/lib/utils';
+import { CodeEditor } from '@/components/ui/CodeEditor';
 
 interface EdgeDetailsDialogProps {
   open: boolean;
@@ -102,30 +103,15 @@ export function EdgeDetailsDialog({
           </Row>
         </Section>
 
-        {/* ── Data Contract ── */}
+        {/* ── Data Contract — request, plus response when present ── */}
         {data?.dataContract && (
-          <Section title="Data Contract">
-            {data.dataContract.format && (
-              <Row label="Format">
-                <Badge>{data.dataContract.format.toUpperCase()}</Badge>
-              </Row>
-            )}
-            {data.dataContract.schemaName && (
-              <Row label="Schema Name">{data.dataContract.schemaName}</Row>
-            )}
-            {data.dataContract.description && (
-              <Row label="Description">{data.dataContract.description}</Row>
-            )}
-            {data.dataContract.schema && (
-              <div className="mt-2">
-                <p className="mb-1 text-xs font-medium text-muted-foreground">
-                  Schema
-                </p>
-                <pre className="overflow-auto rounded-md bg-muted p-2 text-xs leading-relaxed max-h-40">
-                  {data.dataContract.schema}
-                </pre>
-              </div>
-            )}
+          <Section title={data.responseContract ? 'Request Contract' : 'Data Contract'}>
+            <ContractRows contract={data.dataContract} />
+          </Section>
+        )}
+        {data?.responseContract && (
+          <Section title="Response Contract">
+            <ContractRows contract={data.responseContract} />
           </Section>
         )}
       </DialogContent>
@@ -197,6 +183,32 @@ const HTTP_METHOD_COLORS: Record<string, string> = {
   PATCH: 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-950',
   DELETE: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950',
 };
+
+function ContractRows({ contract }: { contract: DataContract }) {
+  return (
+    <>
+      {contract.format && (
+        <Row label="Format">
+          <Badge>{contract.format.toUpperCase()}</Badge>
+        </Row>
+      )}
+      {contract.schemaName && <Row label="Schema Name">{contract.schemaName}</Row>}
+      {contract.description && <Row label="Description">{contract.description}</Row>}
+      {contract.schema && (
+        <div className="mt-2">
+          <p className="mb-1 text-xs font-medium text-muted-foreground">Schema</p>
+          <CodeEditor
+            value={contract.schema}
+            onChange={() => {}}
+            format={contract.format ?? 'json'}
+            height="160px"
+            readOnly
+          />
+        </div>
+      )}
+    </>
+  );
+}
 
 function HttpMethodBadge({ method }: { method: string }) {
   const color = HTTP_METHOD_COLORS[method] ?? 'text-zinc-600 bg-zinc-100 dark:text-zinc-300 dark:bg-zinc-800';

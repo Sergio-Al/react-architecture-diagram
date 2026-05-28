@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon as IconifyIcon } from '@iconify/react';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useAnimationStore } from '@/store/animationStore';
 import { useOnboardingStore } from '@/store/onboardingStore';
-import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG, HEALTH_STATUS_STYLES } from '@/constants';
+import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG, DATA_FORMATS, COMMENT_CONFIG, HEALTH_STATUS_STYLES, PROTOCOL_CONFIG } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNodeData, ArchitectureEdgeData, EdgeProtocol, HttpMethod, NodeStatus, GroupNodeData, GroupNodeType, DataFormat, CommentNodeData, CommentColor } from '@/types';
 import { cn } from '@/lib/utils';
 import { 
@@ -48,6 +48,13 @@ export function PropertiesPanel() {
   const onboardingActiveStep = useOnboardingStore((s) => s.activeStep);
 
   const [isTestingHealth, setIsTestingHealth] = useState(false);
+
+  // Which side of the data contract is being edited — only meaningful for
+  // request/response protocols. Resets to 'request' on edge change.
+  const [contractSide, setContractSide] = useState<'request' | 'response'>('request');
+  useEffect(() => {
+    setContractSide('request');
+  }, [selectedEdgeId]);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const selectedEdge = edges.find((e) => e.id === selectedEdgeId);
@@ -991,109 +998,146 @@ export function PropertiesPanel() {
 
           <hr className="border-zinc-200 dark:border-zinc-800" />
 
-          {/* Data Contract Section */}
-          <div
-            className={cn(
-              'space-y-4 rounded-lg',
-              onboardingActiveStep === 'set-contract' && 'onboarding-pulse p-2 -m-2'
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
-                Data Contract
-              </label>
-              <span className="text-[9px] text-zinc-400 dark:text-zinc-600">Optional</span>
-            </div>
+          {/* Data Contract Section — segmented Request | Response for request/response protocols. */}
+          {(() => {
+            const supportsResponse =
+              edgeData.protocol != null &&
+              PROTOCOL_CONFIG[edgeData.protocol]?.requestResponse === true;
+            const activeSide: 'request' | 'response' = supportsResponse ? contractSide : 'request';
+            const fieldKey = activeSide === 'response' ? 'responseContract' : 'dataContract';
+            const activeContract = edgeData[fieldKey] as typeof edgeData.dataContract;
+            const updateContract = (patch: Partial<NonNullable<typeof activeContract>>) =>
+              updateEdgeData(selectedEdge.id, {
+                [fieldKey]: {
+                  format: 'json' as DataFormat,
+                  ...(activeContract || {}),
+                  ...patch,
+                },
+              });
+            const hasResponseContract = edgeData.responseContract != null;
 
-            {/* Format */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-                Format
-              </label>
-              <div className="relative">
-                <select
-                  value={edgeData.dataContract?.format || 'json'}
-                  onChange={(e) => updateEdgeData(selectedEdge.id, { 
-                    dataContract: { 
-                      ...(edgeData.dataContract || {}),
-                      format: e.target.value as DataFormat 
-                    } 
-                  })}
-                  onKeyDown={(e) => e.stopPropagation()}
-                  className="w-full appearance-none bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
-                >
-                  {Object.entries(DATA_FORMATS).map(([key, config]) => (
-                    <option key={key} value={key}>
-                      {config.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDownIcon className="absolute right-2 top-2 w-3 h-3 text-zinc-500 pointer-events-none" />
+            return (
+              <div
+                className={cn(
+                  'space-y-4 rounded-lg',
+                  onboardingActiveStep === 'set-contract' && 'onboarding-pulse p-2 -m-2'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
+                    Data Contract
+                  </label>
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-600">Optional</span>
+                </div>
+
+                {/* Segmented control — only for request/response protocols. */}
+                {supportsResponse && (
+                  <div className="grid grid-cols-2 gap-0.5 p-0.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded">
+                    <button
+                      type="button"
+                      onClick={() => setContractSide('request')}
+                      className={cn(
+                        'text-[10px] font-medium uppercase tracking-wide py-1 rounded transition-colors',
+                        activeSide === 'request'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+                      )}
+                    >
+                      Request
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setContractSide('response')}
+                      className={cn(
+                        'text-[10px] font-medium uppercase tracking-wide py-1 rounded transition-colors flex items-center justify-center gap-1',
+                        activeSide === 'response'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+                      )}
+                    >
+                      Response
+                      {hasResponseContract && (
+                        <span className="w-1 h-1 rounded-full bg-emerald-500" aria-label="Response contract defined" />
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Format */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                    Format
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={activeContract?.format || 'json'}
+                      onChange={(e) => updateContract({ format: e.target.value as DataFormat })}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      className="w-full appearance-none bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+                    >
+                      {Object.entries(DATA_FORMATS).map(([key, config]) => (
+                        <option key={key} value={key}>
+                          {config.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDownIcon className="absolute right-2 top-2 w-3 h-3 text-zinc-500 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Schema Name */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                    Schema Name
+                  </label>
+                  <input
+                    type="text"
+                    value={activeContract?.schemaName || ''}
+                    onChange={(e) => updateContract({ schemaName: e.target.value })}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    placeholder={activeSide === 'response' ? 'e.g., TaskCreatedResponse' : 'e.g., TaskCreatedEvent'}
+                    className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                {/* Schema Definition */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                    Schema Definition
+                  </label>
+                  <CodeEditor
+                    value={activeContract?.schema || ''}
+                    onChange={(value) => updateContract({ schema: value })}
+                    format={activeContract?.format || 'json'}
+                    placeholder={DATA_FORMATS[activeContract?.format || 'json'].placeholder}
+                    height="180px"
+                  />
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-600">
+                    {DATA_FORMATS[activeContract?.format || 'json'].description}
+                  </span>
+                </div>
+
+                {/* Contract Description */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                    Contract Notes
+                  </label>
+                  <textarea
+                    value={activeContract?.description || ''}
+                    onChange={(e) => updateContract({ description: e.target.value })}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    placeholder={
+                      activeSide === 'response'
+                        ? 'Additional notes about the response contract...'
+                        : 'Additional notes about this data contract...'
+                    }
+                    rows={2}
+                    className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors resize-none"
+                  />
+                </div>
               </div>
-            </div>
-
-            {/* Schema Name */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-                Schema Name
-              </label>
-              <input
-                type="text"
-                value={edgeData.dataContract?.schemaName || ''}
-                onChange={(e) => updateEdgeData(selectedEdge.id, { 
-                  dataContract: { 
-                    ...(edgeData.dataContract || { format: 'json' }),
-                    schemaName: e.target.value 
-                  } 
-                })}
-                onKeyDown={(e) => e.stopPropagation()}
-                placeholder="e.g., TaskCreatedEvent"
-                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors"
-              />
-            </div>
-
-            {/* Schema Definition */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-                Schema Definition
-              </label>
-              <CodeEditor
-                value={edgeData.dataContract?.schema || ''}
-                onChange={(value) => updateEdgeData(selectedEdge.id, { 
-                  dataContract: { 
-                    ...(edgeData.dataContract || { format: 'json' }),
-                    schema: value 
-                  } 
-                })}
-                format={edgeData.dataContract?.format || 'json'}
-                placeholder={DATA_FORMATS[edgeData.dataContract?.format || 'json'].placeholder}
-                height="180px"
-              />
-              <span className="text-[9px] text-zinc-400 dark:text-zinc-600">
-                {DATA_FORMATS[edgeData.dataContract?.format || 'json'].description}
-              </span>
-            </div>
-
-            {/* Contract Description */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-                Contract Notes
-              </label>
-              <textarea
-                value={edgeData.dataContract?.description || ''}
-                onChange={(e) => updateEdgeData(selectedEdge.id, { 
-                  dataContract: { 
-                    ...(edgeData.dataContract || { format: 'json' }),
-                    description: e.target.value 
-                  } 
-                })}
-                onKeyDown={(e) => e.stopPropagation()}
-                placeholder="Additional notes about this data contract..."
-                rows={2}
-                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors resize-none"
-              />
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Metadata Section */}
           <div className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-3 border border-zinc-200 dark:border-zinc-800 space-y-2">
