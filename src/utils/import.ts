@@ -189,17 +189,21 @@ function validateEdge(edge: any, index: number, nodeIds: Set<string>): Validatio
     }
   }
 
-  // Validate data contract format if present
-  if (edge.data?.dataContract?.format) {
-    const validFormats: DataFormat[] = ['json', 'protobuf', 'avro', 'xml', 'binary', 'text'];
-    
-    if (!validFormats.includes(edge.data.dataContract.format)) {
-      errors.push({
-        field: `edges[${index}].data.dataContract.format`,
-        message: `Invalid data format. Must be one of: ${validFormats.join(', ')}`,
-        severity: 'warning',
-      });
-    }
+  // Validate data contract format if present (request and optional response)
+  const validFormats: DataFormat[] = ['json', 'protobuf', 'avro', 'xml', 'binary', 'text'];
+  if (edge.data?.dataContract?.format && !validFormats.includes(edge.data.dataContract.format)) {
+    errors.push({
+      field: `edges[${index}].data.dataContract.format`,
+      message: `Invalid data format. Must be one of: ${validFormats.join(', ')}`,
+      severity: 'warning',
+    });
+  }
+  if (edge.data?.responseContract?.format && !validFormats.includes(edge.data.responseContract.format)) {
+    errors.push({
+      field: `edges[${index}].data.responseContract.format`,
+      message: `Invalid response format. Must be one of: ${validFormats.join(', ')}`,
+      severity: 'warning',
+    });
   }
 
   return errors;

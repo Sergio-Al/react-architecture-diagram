@@ -123,7 +123,10 @@ export type ArchitectureEdgeData = {
   bidirectional?: boolean;
   latencyMs?: number;
   description?: string;
+  /** Request payload contract (for request/response protocols, this is the request body). */
   dataContract?: DataContract;
+  /** Response payload contract — only meaningful when the protocol supports request/response. */
+  responseContract?: DataContract;
 } & Record<string, unknown>;
 
 // Use base types from React Flow

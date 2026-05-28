@@ -29,6 +29,9 @@ export function ArchitectureEdge({
   const edgeData = data as ArchitectureEdgeData | undefined;
   const { theme } = useThemeStore();
   const { edgeStyle } = useUIStore();
+  const isProtocolHidden = useUIStore((s) =>
+    edgeData?.protocol ? s.hiddenProtocols.has(edgeData.protocol) : false
+  );
   const [isDark, setIsDark] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -139,7 +142,10 @@ export function ArchitectureEdge({
   const markerStart = isBidirectional ? `url(#arrow-${id}-start)` : undefined;
 
   return (
-    <g data-edge-id={id}>
+    <g
+      data-edge-id={id}
+      style={isProtocolHidden ? { opacity: 0.12, transition: 'opacity 200ms ease' } : { transition: 'opacity 200ms ease' }}
+    >
       {/* Arrow markers for bidirectional edges */}
       {isBidirectional && (
         <defs>
@@ -268,7 +274,9 @@ export function ArchitectureEdge({
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              pointerEvents: 'all',
+              pointerEvents: isProtocolHidden ? 'none' : 'all',
+              opacity: isProtocolHidden ? 0.2 : 1,
+              transition: 'opacity 200ms ease',
             }}
             className={cn(
               'px-2 py-0.5 text-[10px] font-medium rounded-full cursor-pointer',

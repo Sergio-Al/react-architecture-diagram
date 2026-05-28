@@ -92,6 +92,7 @@ export function ShortcutsHelp({ onClose }: ShortcutsHelpProps) {
                 <Section title="Selection">
                   <Shortcut keys={['Shift', 'Click']} description="Multi-select" />
                   <Shortcut keys={['Drag']} description="Box select" />
+                  <Shortcut keys={['⌘', 'K']} description="Spotlight search" />
                 </Section>
 
                 {/* Layout */}
