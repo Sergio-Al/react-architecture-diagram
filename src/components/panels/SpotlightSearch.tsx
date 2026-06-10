@@ -20,6 +20,44 @@ interface Result {
   score: number;
 }
 
+/**
+ * Subsequence fuzzy matcher. Returns null if `query` is not a subsequence
+ * of `target` (case-insensitive); otherwise returns a score where lower is
+ * better. Bonuses for matches at word boundaries (start, after space/_/-/.)
+ * and for consecutive runs; penalties for gaps and late match positions.
+ */
+function fuzzyScore(query: string, target: string): number | null {
+  if (!query) return 0;
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
+
+  let qi = 0;
+  let lastMatchIdx = -1;
+  let score = 0;
+  let prevMatched = false;
+
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] !== q[qi]) {
+      prevMatched = false;
+      continue;
+    }
+    // Gap from previous match (or distance from start for first match).
+    score += lastMatchIdx >= 0 ? ti - lastMatchIdx - 1 : ti;
+    // Word-boundary bonus.
+    const prev = ti === 0 ? '' : t[ti - 1];
+    if (ti === 0 || prev === ' ' || prev === '_' || prev === '-' || prev === '.' || prev === '/') {
+      score -= 8;
+    }
+    // Consecutive-character bonus.
+    if (prevMatched) score -= 4;
+    lastMatchIdx = ti;
+    qi++;
+    prevMatched = true;
+  }
+
+  return qi === q.length ? score : null;
+}
+
 export function SpotlightSearch() {
   const open = useUIStore((s) => s.spotlightOpen);
   const setOpen = useUIStore((s) => s.setSpotlightOpen);
@@ -64,21 +102,24 @@ export function SpotlightSearch() {
         });
     }
 
+    // Field weights — added to the per-field fuzzy score so that label
+    // matches outrank type matches outrank technology/description matches.
+    const FIELD_OFFSETS = { label: 0, type: 20, technology: 30, description: 50 };
+
     const scored: Result[] = [];
     for (const n of archNodes) {
       const data = n.data as ArchitectureNodeData;
-      const label = (data.label || '').toLowerCase();
-      const type = (data.type || '').toLowerCase();
-      const description = (data.description || '').toLowerCase();
-      const technology = (data.technology || '').toLowerCase();
+      const labelScore = fuzzyScore(q, data.label || '');
+      const typeScore = fuzzyScore(q, data.type || '');
+      const techScore = fuzzyScore(q, data.technology || '');
+      const descScore = fuzzyScore(q, data.description || '');
 
-      let score = Infinity;
-      if (label.startsWith(q)) score = 0;
-      else if (label.includes(q)) score = 10;
-      else if (type.includes(q)) score = 20;
-      else if (technology.includes(q)) score = 30;
-      else if (description.includes(q)) score = 40;
-      else continue;
+      const candidates: number[] = [];
+      if (labelScore !== null) candidates.push(labelScore + FIELD_OFFSETS.label);
+      if (typeScore !== null) candidates.push(typeScore + FIELD_OFFSETS.type);
+      if (techScore !== null) candidates.push(techScore + FIELD_OFFSETS.technology);
+      if (descScore !== null) candidates.push(descScore + FIELD_OFFSETS.description);
+      if (candidates.length === 0) continue;
 
       scored.push({
         id: n.id,
@@ -86,7 +127,7 @@ export function SpotlightSearch() {
         type: data.type,
         description: data.description,
         iconifyIcon: data.iconifyIcon,
-        score,
+        score: Math.min(...candidates),
       });
     }
     scored.sort((a, b) => a.score - b.score || a.label.localeCompare(b.label));

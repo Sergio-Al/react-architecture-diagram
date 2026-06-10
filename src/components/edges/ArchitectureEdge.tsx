@@ -32,6 +32,14 @@ export function ArchitectureEdge({
   const isProtocolHidden = useUIStore((s) =>
     edgeData?.protocol ? s.hiddenProtocols.has(edgeData.protocol) : false
   );
+  const isTagHidden = useUIStore((s) => {
+    if (!edgeData?.tags || edgeData.tags.length === 0) return false;
+    for (const t of edgeData.tags) {
+      if (s.hiddenTags.has(t.toLowerCase())) return true;
+    }
+    return false;
+  });
+  const isEdgeDimmed = isProtocolHidden || isTagHidden;
   const [isDark, setIsDark] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -144,7 +152,7 @@ export function ArchitectureEdge({
   return (
     <g
       data-edge-id={id}
-      style={isProtocolHidden ? { opacity: 0.12, transition: 'opacity 200ms ease' } : { transition: 'opacity 200ms ease' }}
+      style={isEdgeDimmed ? { opacity: 0.12, transition: 'opacity 200ms ease' } : { transition: 'opacity 200ms ease' }}
     >
       {/* Arrow markers for bidirectional edges */}
       {isBidirectional && (
@@ -274,8 +282,8 @@ export function ArchitectureEdge({
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              pointerEvents: isProtocolHidden ? 'none' : 'all',
-              opacity: isProtocolHidden ? 0.2 : 1,
+              pointerEvents: isEdgeDimmed ? 'none' : 'all',
+              opacity: isEdgeDimmed ? 0.2 : 1,
               transition: 'opacity 200ms ease',
             }}
             className={cn(

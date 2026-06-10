@@ -12,6 +12,8 @@ import type { SimulationSpeed, ChaosSubMode } from '@/types/simulation';
 import { SimulationStats } from './SimulationStats';
 import { ChaosEventLog } from './ChaosEventLog';
 import { SequenceDiagramDialog } from '@/components/ui/SequenceDiagramDialog';
+import { SaveFlowDialog } from '@/components/ui/SaveFlowDialog';
+import type { NamedFlow } from '@/types/simulation';
 import {
   PlayIcon,
   PauseIcon,
@@ -27,6 +29,7 @@ import {
   FireIcon,
   ListBulletIcon,
   Bars3BottomLeftIcon,
+  BookmarkIcon,
 } from '@heroicons/react/24/outline';
 
 const SPEED_OPTIONS: SimulationSpeed[] = [0.25, 0.5, 1, 2, 4];
@@ -76,9 +79,12 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
 
   const nodes = useDiagramStore((s) => s.nodes);
   const edges = useDiagramStore((s) => s.edges);
+  const addFlow = useDiagramStore((s) => s.addFlow);
 
   // Sequence-diagram dialog (generated on demand from the traced flow path)
   const [sequenceSource, setSequenceSource] = useState<string | null>(null);
+  // Save-as-flow dialog
+  const [saveFlowOpen, setSaveFlowOpen] = useState(false);
 
   // Get source node label for display
   const sourceNode = sourceNodeId
@@ -398,6 +404,22 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
               <Bars3BottomLeftIcon className="w-3 h-3" />
               Seq
             </button>
+
+            {/* Save current source as a named flow */}
+            <button
+              onClick={() => setSaveFlowOpen(true)}
+              disabled={!sourceNodeId}
+              className={cn(
+                'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1',
+                !sourceNodeId
+                  ? 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed'
+                  : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
+              )}
+              title="Save the current source as a replayable named flow"
+            >
+              <BookmarkIcon className="w-3 h-3" />
+              Save
+            </button>
           </>
         )}
 
@@ -521,6 +543,17 @@ export function SimulationPanel({ onClose }: SimulationPanelProps) {
         source={sequenceSource ?? ''}
         title={sourceLabel ?? undefined}
         onClose={() => setSequenceSource(null)}
+      />
+
+      <SaveFlowDialog
+        isOpen={saveFlowOpen}
+        onClose={() => setSaveFlowOpen(false)}
+        sourceNodeLabel={sourceLabel ?? undefined}
+        onSubmit={(data: Pick<NamedFlow, 'name' | 'description' | 'color' | 'speed'>) => {
+          if (!sourceNodeId) return;
+          addFlow({ ...data, sourceNodeId });
+          setSaveFlowOpen(false);
+        }}
       />
     </div>
   );

@@ -289,6 +289,56 @@ export function validateDiagramData(data: any): ValidationError[] {
     errors.push(...validateViewport(data.viewport));
   }
 
+  // Validate flows (optional)
+  if (data.flows !== undefined) {
+    if (!Array.isArray(data.flows)) {
+      errors.push({
+        field: 'flows',
+        message: 'Flows must be an array',
+        severity: 'warning',
+      });
+    } else {
+      const nodeIds = new Set<string>(Array.isArray(data.nodes) ? data.nodes.map((n: any) => n.id) : []);
+      data.flows.forEach((flow: any, index: number) => {
+        if (!flow || typeof flow !== 'object') {
+          errors.push({
+            field: `flows[${index}]`,
+            message: 'Flow must be an object',
+            severity: 'warning',
+          });
+          return;
+        }
+        if (typeof flow.id !== 'string' || !flow.id) {
+          errors.push({
+            field: `flows[${index}].id`,
+            message: 'Flow id is required',
+            severity: 'warning',
+          });
+        }
+        if (typeof flow.name !== 'string' || !flow.name.trim()) {
+          errors.push({
+            field: `flows[${index}].name`,
+            message: 'Flow name is required',
+            severity: 'warning',
+          });
+        }
+        if (typeof flow.sourceNodeId !== 'string' || !flow.sourceNodeId) {
+          errors.push({
+            field: `flows[${index}].sourceNodeId`,
+            message: 'Flow sourceNodeId is required',
+            severity: 'warning',
+          });
+        } else if (nodeIds.size > 0 && !nodeIds.has(flow.sourceNodeId)) {
+          errors.push({
+            field: `flows[${index}].sourceNodeId`,
+            message: `Flow "${flow.name}" references a missing source node ${flow.sourceNodeId}`,
+            severity: 'warning',
+          });
+        }
+      });
+    }
+  }
+
   return errors;
 }
 

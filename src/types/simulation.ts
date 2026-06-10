@@ -148,3 +148,26 @@ export interface SimulationStats {
   /** Number of severed edges (network partition) */
   chaosSeveredEdges: number;
 }
+
+/**
+ * A named, replayable flow scenario saved with the diagram. Unlike the
+ * simulation runtime state above, NamedFlow is PERSISTED in DiagramData.flows
+ * and survives reloads.
+ */
+export interface NamedFlow {
+  id: string;
+  name: string;
+  description?: string;
+  /** ID of the node where the flow originates. */
+  sourceNodeId: string;
+  /** Optional accent color for the flow chip / source ring (hex or CSS color). */
+  color?: string;
+  /** Playback speed to apply when the flow starts. */
+  speed?: SimulationSpeed;
+  /**
+   * Optional explicit edge sequence. When omitted the path is traced from
+   * sourceNodeId via traceFlowPath on play.
+   */
+  edgeIds?: string[];
+  createdAt: string;
+}
