@@ -9,12 +9,15 @@ import {
   Node,
   Edge,
 } from '@xyflow/react';
-import { 
+import {
   ArchitectureNodeData,
   ArchitectureEdgeData,
   GroupNodeData,
   DiagramData,
 } from '@/types';
+import type { NamedFlow } from '@/types/simulation';
+import { useSimulationStore } from '@/store/simulationStore';
+import { traceFlowPath } from '@/utils/graphTraversal';
 import { 
   STORAGE_KEY, 
   AUTO_SAVE_DEBOUNCE,
@@ -47,6 +50,9 @@ interface DiagramStore {
   edges: Edge[];
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
+
+  /** Saved playable flow scenarios. Persisted with the diagram. */
+  flows: NamedFlow[];
   
   // Clipboard
   clipboard: ClipboardState;
@@ -112,6 +118,13 @@ interface DiagramStore {
   clearDiagram: () => void;
   /** Reset in-memory state without persisting — use when switching diagrams. */
   resetDiagramState: () => void;
+
+  // Named flows
+  addFlow: (flow: Omit<NamedFlow, 'id' | 'createdAt'>) => NamedFlow;
+  updateFlow: (id: string, patch: Partial<Omit<NamedFlow, 'id' | 'createdAt'>>) => void;
+  deleteFlow: (id: string) => void;
+  /** Trigger flow simulation for the named flow. Returns true on success. */
+  playFlow: (id: string) => boolean;
 }
 
 // Debounce helper
@@ -130,6 +143,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
   edges: [],
   selectedNodeId: null,
   selectedEdgeId: null,
+  flows: [],
   clipboard: { nodes: [], edges: [] },
   history: [],
   historyIndex: -1,
@@ -850,8 +864,8 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
 
   // Save to localStorage (+ API when a diagramId is active)
   saveDiagram: () => {
-    const { nodes, edges } = get();
-    const data = { nodes, edges } as DiagramData;
+    const { nodes, edges, flows } = get();
+    const data = { nodes, edges, flows } as DiagramData;
 
     // Use a per-diagram localStorage key so different diagrams never share the same entry
     const diagramId = useWorkspaceStore.getState().currentDiagramId;
@@ -886,10 +900,11 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
             
             const decompressed = pako.inflate(bytes, { to: 'string' });
             const data = JSON.parse(decompressed) as DiagramData;
-            
+
             set({
               nodes: data.nodes as Node[] || [],
               edges: data.edges as Edge[] || [],
+              flows: data.flows || [],
               history: [{ nodes: data.nodes as Node[] || [], edges: data.edges as Edge[] || [] }],
               historyIndex: 0,
             });
@@ -913,6 +928,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
         set({
           nodes: data.nodes as Node[] || [],
           edges: data.edges as Edge[] || [],
+          flows: data.flows || [],
           history: [{ nodes: data.nodes as Node[] || [], edges: data.edges as Edge[] || [] }],
           historyIndex: 0,
         });
@@ -924,8 +940,8 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
 
   // Export diagram data
   exportDiagram: () => {
-    const { nodes, edges } = get();
-    return { nodes, edges } as DiagramData;
+    const { nodes, edges, flows } = get();
+    return { nodes, edges, flows } as DiagramData;
   },
 
   // Import diagram data
@@ -933,6 +949,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     set({
       nodes: data.nodes as Node[] || [],
       edges: data.edges as Edge[] || [],
+      flows: data.flows || [],
       selectedNodeId: null,
       selectedEdgeId: null,
     });
@@ -945,6 +962,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     set({
       nodes: [],
       edges: [],
+      flows: [],
       selectedNodeId: null,
       selectedEdgeId: null,
     });
@@ -961,11 +979,51 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     set({
       nodes: [],
       edges: [],
+      flows: [],
       selectedNodeId: null,
       selectedEdgeId: null,
       history: [],
       historyIndex: -1,
     });
+  },
+
+  // ── Named flows ────────────────────────────────────────────
+  addFlow: (partial) => {
+    const flow: NamedFlow = {
+      id: `flow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: new Date().toISOString(),
+      ...partial,
+    };
+    set((state) => ({ flows: [...state.flows, flow] }));
+    debouncedSave(get().saveDiagram);
+    return flow;
+  },
+
+  updateFlow: (id, patch) => {
+    set((state) => ({
+      flows: state.flows.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    }));
+    debouncedSave(get().saveDiagram);
+  },
+
+  deleteFlow: (id) => {
+    set((state) => ({ flows: state.flows.filter((f) => f.id !== id) }));
+    debouncedSave(get().saveDiagram);
+  },
+
+  playFlow: (id) => {
+    const { flows, nodes, edges } = get();
+    const flow = flows.find((f) => f.id === id);
+    if (!flow) return false;
+    // Guard against a deleted source — the FlowsPanel surfaces this via a broken badge.
+    if (!nodes.some((n) => n.id === flow.sourceNodeId)) return false;
+
+    const sim = useSimulationStore.getState();
+    if (sim.mode !== 'flow') sim.setMode('flow');
+    if (flow.speed) sim.setSpeed(flow.speed);
+    const path = traceFlowPath(nodes, edges, flow.sourceNodeId);
+    sim.startFlowSimulation(flow.sourceNodeId, path);
+    return true;
   },
 
   // Apply auto-layout using Dagre

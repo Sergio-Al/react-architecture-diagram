@@ -8,6 +8,7 @@ import { ArchitectureNodeData } from '@/types';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useAnimationStore } from '@/store/animationStore';
+import { useUIStore } from '@/store/uiStore';
 import { HeartIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { IconPickerDialog } from '@/components/ui/IconPickerDialog';
 
@@ -75,9 +76,19 @@ export const ArchitectureNode = memo(({ data, selected, id }: NodeProps) => {
   // Animation state — hide node during shatter animation
   const isPendingDeletion = useAnimationStore((s) => s.isPendingDeletion(id));
 
+  // Tag filtering — dim if any of this node's tags is hidden.
+  const isTagHidden = useUIStore((s) => {
+    if (!nodeData.tags || nodeData.tags.length === 0) return false;
+    for (const t of nodeData.tags) {
+      if (s.hiddenTags.has(t.toLowerCase())) return true;
+    }
+    return false;
+  });
+
   return (
     <div
       data-node-id={id}
+      style={isTagHidden ? { opacity: 0.12, transition: 'opacity 200ms ease' } : undefined}
       className={cn(
         'relative flex flex-col items-center gap-2 p-3 min-w-30 rounded-xl bg-white/90 dark:bg-zinc-900/90 border backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all hover:border-zinc-400 dark:hover:border-zinc-600',
         selected

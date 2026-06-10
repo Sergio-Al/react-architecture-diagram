@@ -30,6 +30,7 @@ import {
   BoltIcon,
   ArrowUpCircleIcon,
   ArrowDownCircleIcon,
+  PlayCircleIcon,
 } from '@heroicons/react/24/outline';
 import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
@@ -40,6 +41,8 @@ import { ProtocolLegend } from '@/components/panels/ProtocolLegend';
 import { NodeDetailPopup } from '@/components/panels/NodeDetailPopup';
 import { CanvasStatusBar } from '@/components/panels/CanvasStatusBar';
 import { SpotlightSearch } from '@/components/panels/SpotlightSearch';
+import { TagFilter } from '@/components/panels/TagFilter';
+import { FlowsPanel } from '@/components/panels/FlowsPanel';
 import { ImportDialog } from '@/components/ui/ImportDialog';
 import { LaserPointer } from '@/components/ui/LaserPointer';
 import { CollaboratorCursors } from '@/components/ui/CollaboratorCursors';
@@ -100,6 +103,7 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showSimulationPanel, setShowSimulationPanel] = useState(false);
+  const [showFlowsPanel, setShowFlowsPanel] = useState(false);
   const [laserMode, setLaserMode] = useState(false);
   
   // Simulation & animation hooks
@@ -903,6 +907,18 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
         >
           <BoltIcon className="w-4 h-4" />
         </button>
+        <button
+          onClick={() => setShowFlowsPanel((v) => !v)}
+          className={cn(
+            'p-2 rounded-full transition-colors',
+            showFlowsPanel
+              ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+              : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          )}
+          title="Saved Flows"
+        >
+          <PlayCircleIcon className="w-4 h-4" />
+        </button>
       </div>
 
 
@@ -999,6 +1015,7 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
       {/* Canvas overlays — diagram info, protocol legend, node detail, status bar */}
       <DiagramInfoCard />
       <ProtocolLegend />
+      <TagFilter />
       <NodeDetailPopup />
       <CanvasStatusBar />
       <SpotlightSearch />
@@ -1012,6 +1029,13 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
           setShowSimulationPanel(false);
           simulationSetMode('idle');
         }} />
+      )}
+
+      {/* Saved flows sidebar (anchored to the canvas right edge) */}
+      {showFlowsPanel && (
+        <div className="absolute top-0 right-0 h-full z-30">
+          <FlowsPanel onClose={() => setShowFlowsPanel(false)} />
+        </div>
       )}
 
       {/* Getting-started onboarding checklist (hidden while the sim bar is up) */}

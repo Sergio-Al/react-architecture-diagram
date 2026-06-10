@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Icon as IconifyIcon } from '@iconify/react';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useAnimationStore } from '@/store/animationStore';
@@ -22,6 +22,7 @@ import {
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
 import { IconPickerDialog } from '@/components/ui/IconPickerDialog';
+import { TagInput } from '@/components/ui/TagInput';
 
 export function PropertiesPanel() {
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
@@ -58,6 +59,22 @@ export function PropertiesPanel() {
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const selectedEdge = edges.find((e) => e.id === selectedEdgeId);
+
+  // Tag suggestions: union of every tag in use across nodes + edges.
+  const tagSuggestions = useMemo(() => {
+    const set = new Set<string>();
+    for (const n of nodes) {
+      if (n.type === 'architecture') {
+        const t = (n.data as ArchitectureNodeData).tags;
+        if (Array.isArray(t)) for (const tag of t) set.add(tag);
+      }
+    }
+    for (const e of edges) {
+      const t = (e.data as ArchitectureEdgeData | undefined)?.tags;
+      if (Array.isArray(t)) for (const tag of t) set.add(tag);
+    }
+    return Array.from(set).sort();
+  }, [nodes, edges]);
 
   if (!selectedNode && !selectedEdge) {
     return (
@@ -742,6 +759,22 @@ export function PropertiesPanel() {
               )}
             </div>
 
+            {/* Tags */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Tags
+              </label>
+              <TagInput
+                value={nodeData.tags || []}
+                onChange={(next) => updateNodeData(selectedNode.id, { tags: next })}
+                suggestions={tagSuggestions}
+                placeholder="e.g. pci, team:payments"
+              />
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-600">
+                Filter the canvas by tag from the top-right overlay
+              </span>
+            </div>
+
             {/* Parent Group */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
@@ -992,6 +1025,19 @@ export function PropertiesPanel() {
                 placeholder="Describe this connection..."
                 rows={3}
                 className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 focus:outline-none transition-colors resize-none"
+              />
+            </div>
+
+            {/* Tags */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Tags
+              </label>
+              <TagInput
+                value={edgeData.tags || []}
+                onChange={(next) => updateEdgeData(selectedEdge.id, { tags: next })}
+                suggestions={tagSuggestions}
+                placeholder="e.g. critical, public-api"
               />
             </div>
           </div>

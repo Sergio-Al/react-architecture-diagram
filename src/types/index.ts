@@ -48,6 +48,8 @@ export type ArchitectureNodeData = {
   metadata?: Record<string, string>;
   parentId?: string; // For grouping - reference to parent group
   healthCheckUrl?: string; // Health check endpoint URL
+  /** Free-form user tags. Filterable via the TagFilter overlay. */
+  tags?: string[];
   iconifyIcon?: string; // Custom Iconify icon ID (e.g., "mdi:kubernetes", "logos:docker-icon")
   iconColor?: string; // Custom icon color (hex/CSS color)
   accentColor?: string; // Optional accent for icon container and subtle highlights
@@ -127,6 +129,8 @@ export type ArchitectureEdgeData = {
   dataContract?: DataContract;
   /** Response payload contract — only meaningful when the protocol supports request/response. */
   responseContract?: DataContract;
+  /** Free-form user tags. Filterable via the TagFilter overlay. */
+  tags?: string[];
 } & Record<string, unknown>;
 
 // Use base types from React Flow
@@ -139,6 +143,8 @@ export type ArchitectureEdge = Edge<ArchitectureEdgeData>;
 export interface DiagramData {
   nodes: ArchitectureNode[];
   edges: ArchitectureEdge[];
+  /** Optional saved playable flows. Backward-compat: old diagrams have undefined. */
+  flows?: import('./simulation').NamedFlow[];
   viewport?: {
     x: number;
     y: number;
