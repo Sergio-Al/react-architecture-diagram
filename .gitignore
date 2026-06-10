@@ -54,6 +54,7 @@ public/icons-night/
 # Testing
 coverage/
 .nyc_output/
+.playwright-mcp/
 
 # TypeScript
 *.tsbuildinfo
