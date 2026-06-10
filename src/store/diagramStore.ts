@@ -620,52 +620,22 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     debouncedSave(get().saveDiagram);
   },
 
-  // Toggle group collapse
+  // Toggle group collapse. Only flips the flag — child/edge visibility and
+  // boundary-edge roll-up are DERIVED at render time (utils/groupRollup.ts),
+  // so nodes added or edges drawn while collapsed stay consistent.
   toggleGroupCollapse: (id) => {
     const { nodes } = get();
     const groupNode = nodes.find(n => n.id === id);
     if (!groupNode) return;
 
     const isCollapsing = !(groupNode.data as GroupNodeData).collapsed;
-    
-    // Find all children (nodes with this group as parent)
-    const childNodeIds = nodes
-      .filter(n => n.parentId === id)
-      .map(n => n.id);
 
     set((state) => ({
-      nodes: state.nodes.map((node) => {
-        // Toggle the group itself
-        if (node.id === id) {
-          return { ...node, data: { ...node.data, collapsed: isCollapsing } };
-        }
-        // Hide/show child nodes
-        if (childNodeIds.includes(node.id)) {
-          return { ...node, hidden: isCollapsing };
-        }
-        return node;
-      }),
-      edges: state.edges.map((edge) => {
-        // Hide edges between hidden nodes or edges to/from hidden nodes
-        const sourceHidden = childNodeIds.includes(edge.source);
-        const targetHidden = childNodeIds.includes(edge.target);
-        
-        if (sourceHidden && targetHidden) {
-          // Both nodes hidden - hide the edge
-          return { ...edge, hidden: isCollapsing };
-        } else if (sourceHidden || targetHidden) {
-          // One end hidden - connect to group instead
-          if (isCollapsing) {
-            return {
-              ...edge,
-              hidden: true, // Hide internal edges when collapsed
-            };
-          } else {
-            return { ...edge, hidden: false };
-          }
-        }
-        return edge;
-      }),
+      nodes: state.nodes.map((node) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, collapsed: isCollapsing } }
+          : node
+      ),
     }));
     get().saveToHistory();
     debouncedSave(get().saveDiagram);

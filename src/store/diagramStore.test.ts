@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useDiagramStore } from '@/store/diagramStore';
+import { applyGroupCollapse } from '@/utils/groupRollup';
 import { Node, Edge } from '@xyflow/react';
 
 // Reset store before each test
@@ -566,7 +567,7 @@ describe('diagramStore', () => {
         expect(updatedGroup?.data.collapsed).toBe(true);
       });
 
-      it('should hide child nodes when collapsing', () => {
+      it('should hide child nodes in the derived display graph when collapsing', () => {
         const group = createGroupNode('group-1');
         const child = createChildNode('node-1', 'group-1');
 
@@ -574,11 +575,11 @@ describe('diagramStore', () => {
         useDiagramStore.getState().toggleGroupCollapse('group-1');
 
         const state = useDiagramStore.getState();
-        const updatedChild = state.nodes.find(n => n.id === 'node-1');
-        expect(updatedChild?.hidden).toBe(true);
+        const { displayNodes } = applyGroupCollapse(state.nodes, state.edges);
+        expect(displayNodes.find(n => n.id === 'node-1')?.hidden).toBe(true);
       });
 
-      it('should show child nodes when expanding', () => {
+      it('should show child nodes in the derived display graph when expanding', () => {
         const group = { ...createGroupNode('group-1'), data: { ...createGroupNode('group-1').data, collapsed: true } };
         const child = { ...createChildNode('node-1', 'group-1'), hidden: true };
 
@@ -586,8 +587,8 @@ describe('diagramStore', () => {
         useDiagramStore.getState().toggleGroupCollapse('group-1');
 
         const state = useDiagramStore.getState();
-        const updatedChild = state.nodes.find(n => n.id === 'node-1');
-        expect(updatedChild?.hidden).toBe(false);
+        const { displayNodes } = applyGroupCollapse(state.nodes, state.edges);
+        expect(displayNodes.find(n => n.id === 'node-1')?.hidden).toBe(false);
       });
     });
 

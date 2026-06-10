@@ -133,6 +133,22 @@ export type ArchitectureEdgeData = {
   tags?: string[];
 } & Record<string, unknown>;
 
+// Data carried by a synthetic rolled-up edge (derived in utils/groupRollup.ts
+// when a collapsed group aggregates its boundary-crossing edges). Render-only:
+// never persisted and never present in the diagram store.
+export type RollupEdgeData = {
+  /** Number of real edges aggregated into this rollup. */
+  count: number;
+  /** Ids of the aggregated real edges. */
+  edgeIds: string[];
+  /** Distinct protocols across the aggregated edges. */
+  protocols: string[];
+  /** True when the aggregated edges flow in both directions. */
+  bidirectional: boolean;
+  /** The collapsed group endpoint(s) — expanding them restores the real edges. */
+  collapsedGroupIds: string[];
+} & Record<string, unknown>;
+
 // Use base types from React Flow
 export type ArchitectureNode = Node<ArchitectureNodeData>;
 export type GroupNode = Node<GroupNodeData>;

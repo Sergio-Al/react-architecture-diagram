@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, DragEvent, useState } from 'react';
+import { useCallback, useRef, useEffect, useMemo, DragEvent, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -17,6 +17,7 @@ import { edgeTypes } from '@/components/edges';
 import { NODE_TYPES_CONFIG, GROUP_TYPES_CONFIG } from '@/constants';
 import { ArchitectureNodeType, ArchitectureNode, GroupNodeType, GroupNodeData } from '@/types';
 import { traceFlowPath } from '@/utils/graphTraversal';
+import { applyGroupCollapse } from '@/utils/groupRollup';
 import { cn } from '@/lib/utils';
 import { 
   CursorArrowRaysIcon,
@@ -142,6 +143,14 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
     bringNodeToFront,
     sendNodeToBack,
   } = useDiagramStore();
+
+  // Display graph — children of collapsed groups hidden, boundary edges
+  // aggregated into synthetic rollup edges. The store keeps the real graph;
+  // only React Flow sees this derived view.
+  const { displayNodes, displayEdges } = useMemo(
+    () => applyGroupCollapse(nodes, edges),
+    [nodes, edges]
+  );
 
   // Prevent default context menu on the diagram.
   // NOTE: dependencies are intentionally empty — we read the latest store
@@ -965,8 +974,8 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
         <LaserPointer active={laserMode} containerRef={reactFlowWrapper} />
         <CollaboratorCursors cursors={remoteCursors} flowToScreenPosition={flowToScreenPosition} containerRef={reactFlowWrapper} />
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={displayNodes}
+          edges={displayEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
