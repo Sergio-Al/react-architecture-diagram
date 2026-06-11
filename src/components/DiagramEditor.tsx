@@ -32,6 +32,7 @@ import {
   ArrowUpCircleIcon,
   ArrowDownCircleIcon,
   PlayCircleIcon,
+  Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 import { exportSelectedAsSvg, exportSelectedAsPng } from '@/utils/export';
 import { ShortcutsHelp } from '@/components/panels/ShortcutsHelp';
@@ -45,6 +46,7 @@ import { SpotlightSearch } from '@/components/panels/SpotlightSearch';
 import { TagFilter } from '@/components/panels/TagFilter';
 import { FlowsPanel } from '@/components/panels/FlowsPanel';
 import { ImportDialog } from '@/components/ui/ImportDialog';
+import { TemplateGalleryDialog } from '@/components/ui/TemplateGalleryDialog';
 import { LaserPointer } from '@/components/ui/LaserPointer';
 import { CollaboratorCursors } from '@/components/ui/CollaboratorCursors';
 import { useSimulationAnimation } from '@/hooks/useSimulationAnimation';
@@ -103,6 +105,7 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const [showSimulationPanel, setShowSimulationPanel] = useState(false);
   const [showFlowsPanel, setShowFlowsPanel] = useState(false);
   const [laserMode, setLaserMode] = useState(false);
@@ -937,6 +940,13 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
         >
           <ArrowUpTrayIcon className="w-4 h-4" />
         </button>
+        <button
+          onClick={() => setShowTemplateGallery(true)}
+          className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+          title="Starter Templates"
+        >
+          <Squares2X2Icon className="w-4 h-4" />
+        </button>
         <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 my-auto mx-1" />
         <button
           onClick={() => {
@@ -974,9 +984,14 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
 
 
       {/* Import Dialog */}
-      <ImportDialog 
-        isOpen={showImportDialog} 
-        onClose={() => setShowImportDialog(false)} 
+      <ImportDialog
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+      />
+      {/* Starter template gallery */}
+      <TemplateGalleryDialog
+        isOpen={showTemplateGallery}
+        onClose={() => setShowTemplateGallery(false)}
       />
       {/* Shortcuts Help Modal */}
       {showShortcuts && (
@@ -1086,6 +1101,27 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
       {showFlowsPanel && (
         <div className="absolute top-0 right-0 h-full z-30">
           <FlowsPanel onClose={() => setShowFlowsPanel(false)} />
+        </div>
+      )}
+
+      {/* Empty-canvas call to action */}
+      {nodes.length === 0 && !showTemplateGallery && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto text-center px-8 py-7 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-sm">
+            <Squares2X2Icon className="w-6 h-6 mx-auto text-zinc-400 dark:text-zinc-600" />
+            <p className="mt-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Blank canvas
+            </p>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-[230px]">
+              Start from a pre-designed architecture, or drag components from the left palette.
+            </p>
+            <button
+              onClick={() => setShowTemplateGallery(true)}
+              className="mt-4 text-xs font-medium px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-colors"
+            >
+              Browse starter templates
+            </button>
+          </div>
         </div>
       )}
 
