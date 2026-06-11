@@ -17,6 +17,13 @@ import { ArchitectureEdgeData, GroupNodeData, RollupEdgeData } from '@/types';
 /** Prefix for synthetic rolled-up edge ids (kept out of the store). */
 export const ROLLUP_EDGE_PREFIX = 'rollup__';
 
+/**
+ * Display size of a collapsed group's compact card. The stored style keeps the
+ * expanded dimensions so they're restored on expand.
+ */
+export const COLLAPSED_GROUP_WIDTH = 240;
+export const COLLAPSED_GROUP_HEIGHT = 190;
+
 export function isRollupEdgeId(id: string): boolean {
   return id.startsWith(ROLLUP_EDGE_PREFIX);
 }
@@ -99,6 +106,17 @@ export function applyGroupCollapse(nodes: Node[], edges: Edge[]): DisplayGraph {
 
   const displayNodes = nodes.map((n) => {
     const hidden = repOf(n.id) !== n.id;
+    if (!hidden && isCollapsedGroup(n)) {
+      // Visible collapsed group: shrink to the compact card size. The stored
+      // node keeps its expanded style, so expanding restores the footprint.
+      return {
+        ...n,
+        hidden: false,
+        width: undefined,
+        height: undefined,
+        style: { ...n.style, width: COLLAPSED_GROUP_WIDTH, height: COLLAPSED_GROUP_HEIGHT },
+      };
+    }
     return (n.hidden ?? false) === hidden ? n : { ...n, hidden };
   });
 

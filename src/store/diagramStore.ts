@@ -687,15 +687,31 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
         extent: 'parent' as const,
       };
 
-      // IMPORTANT: React Flow requires parent nodes to come BEFORE child nodes in the array
-      const nodesWithoutTarget = state.nodes.filter(n => n.id !== nodeId);
-      const parentIndex = nodesWithoutTarget.findIndex(n => n.id === groupId);
-      
-      // Insert the child node right after its parent
+      // IMPORTANT: React Flow requires parent nodes to come BEFORE child nodes
+      // in the array. When the moved node is itself a group, its whole subtree
+      // must move with it so its own children stay after it.
+      const subtreeIds = new Set<string>([nodeId]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const n of state.nodes) {
+          if (n.parentId && subtreeIds.has(n.parentId) && !subtreeIds.has(n.id)) {
+            subtreeIds.add(n.id);
+            grew = true;
+          }
+        }
+      }
+      const descendants = state.nodes.filter(n => n.id !== nodeId && subtreeIds.has(n.id));
+      const nodesWithoutSubtree = state.nodes.filter(n => !subtreeIds.has(n.id));
+      const parentIndex = nodesWithoutSubtree.findIndex(n => n.id === groupId);
+
+      // Insert the subtree right after its new parent (descendants keep their
+      // original relative order, which is already parent-before-child).
       const reorderedNodes = [
-        ...nodesWithoutTarget.slice(0, parentIndex + 1),
+        ...nodesWithoutSubtree.slice(0, parentIndex + 1),
         updatedNode,
-        ...nodesWithoutTarget.slice(parentIndex + 1),
+        ...descendants,
+        ...nodesWithoutSubtree.slice(parentIndex + 1),
       ];
 
       return { nodes: reorderedNodes };

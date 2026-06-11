@@ -610,6 +610,31 @@ describe('diagramStore', () => {
         expect(updatedNode?.parentId).toBe('group-1');
         expect(updatedNode?.data.parentId).toBe('group-1');
       });
+
+      it('should nest a group into another group, moving its whole subtree after the new parent', () => {
+        const inner = { ...createGroupNode('group-inner'), position: { x: 500, y: 500 } };
+        const innerChild = createChildNode('node-1', 'group-inner');
+        const outer = { ...createGroupNode('group-outer'), style: { width: 900, height: 700 } };
+
+        // inner + its child come BEFORE outer in the array on purpose
+        useDiagramStore.setState({ nodes: [inner, innerChild, outer], edges: [] });
+        useDiagramStore.getState().addNodeToGroup('group-inner', 'group-outer', { x: 100, y: 100 });
+
+        const state = useDiagramStore.getState();
+        const updatedInner = state.nodes.find(n => n.id === 'group-inner');
+        expect(updatedInner?.parentId).toBe('group-outer');
+        expect(updatedInner?.extent).toBe('parent');
+
+        // React Flow requires parents before children: outer < inner < inner's child
+        const order = state.nodes.map(n => n.id);
+        expect(order.indexOf('group-outer')).toBeLessThan(order.indexOf('group-inner'));
+        expect(order.indexOf('group-inner')).toBeLessThan(order.indexOf('node-1'));
+
+        // The grandchild must keep its parent (and its relative position is untouched)
+        const grandchild = state.nodes.find(n => n.id === 'node-1');
+        expect(grandchild?.parentId).toBe('group-inner');
+        expect(grandchild?.position).toEqual({ x: 50, y: 50 });
+      });
     });
 
     describe('removeNodeFromGroup', () => {

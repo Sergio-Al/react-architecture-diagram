@@ -5,6 +5,8 @@ import {
   getVisibleRepresentative,
   isRollupEdgeId,
   ROLLUP_EDGE_PREFIX,
+  COLLAPSED_GROUP_WIDTH,
+  COLLAPSED_GROUP_HEIGHT,
 } from './groupRollup';
 import { RollupEdgeData } from '@/types';
 
@@ -203,6 +205,36 @@ describe('applyGroupCollapse', () => {
 
     expect(rollupsOf(forward.displayEdges)[0].id).toBe(rollupsOf(reverse.displayEdges)[0].id);
     expect(rollupsOf(forward.displayEdges)[0].id.startsWith(ROLLUP_EDGE_PREFIX)).toBe(true);
+  });
+
+  it('shrinks a visible collapsed group to the compact card size without mutating the stored node', () => {
+    const stored = {
+      ...group('g1', true),
+      style: { width: 800, height: 600 },
+    };
+    const nodes = [stored, archNode('a', 'g1')];
+
+    const { displayNodes } = applyGroupCollapse(nodes, []);
+
+    const display = displayNodes.find((n) => n.id === 'g1')!;
+    expect(display.style?.width).toBe(COLLAPSED_GROUP_WIDTH);
+    expect(display.style?.height).toBe(COLLAPSED_GROUP_HEIGHT);
+    expect(display.width).toBeUndefined();
+    expect(display.height).toBeUndefined();
+    // Stored node keeps the expanded footprint for when it's re-expanded.
+    expect(stored.style).toEqual({ width: 800, height: 600 });
+  });
+
+  it('does not shrink an expanded group or a collapsed group hidden inside a collapsed ancestor', () => {
+    const expanded = { ...group('g1', false), style: { width: 800, height: 600 } };
+    const outer = group('outer', true);
+    const hiddenInner = { ...group('inner', true, 'outer'), style: { width: 400, height: 300 } };
+    const { displayNodes } = applyGroupCollapse([expanded, outer, hiddenInner], []);
+
+    expect(displayNodes.find((n) => n.id === 'g1')?.style).toEqual({ width: 800, height: 600 });
+    const inner = displayNodes.find((n) => n.id === 'inner')!;
+    expect(inner.hidden).toBe(true);
+    expect(inner.style).toEqual({ width: 400, height: 300 });
   });
 
   it('preserves object identity for untouched nodes and edges', () => {

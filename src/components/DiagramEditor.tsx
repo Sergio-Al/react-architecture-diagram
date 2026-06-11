@@ -426,31 +426,73 @@ export function DiagramEditor({ remoteCursors = [], sendCursorUpdate }: DiagramE
   // Handle node drag stop - auto-parent to group if dropped inside
   const onNodeDragStop = useCallback(
     (_: React.MouseEvent, node: Node) => {
-      // Skip if it's a group node itself
-      if (node.type === 'group') return;
-
       // If node is already parented and has extent='parent', it's constrained - don't modify
       if (node.parentId && node.extent === 'parent') {
         return;
       }
 
-      // Check if the node intersects with any group
-      const intersectingGroups = getIntersectingNodes(node).filter(n => n.type === 'group');
-      
+      // Groups can be nested inside other groups, but never inside themselves
+      // or one of their own descendants (that would create a parentId cycle).
+      const isInDraggedSubtree = (candidateId: string): boolean => {
+        let current = nodes.find(n => n.id === candidateId);
+        while (current) {
+          if (current.id === node.id) return true;
+          const parentId = current.parentId;
+          current = parentId ? nodes.find(n => n.id === parentId) : undefined;
+        }
+        return false;
+      };
+
+      // Use React Flow's internal nodeLookup to get authoritative positionAbsolute
+      // values. This is more reliable than node.position from the callback or the
+      // Zustand store, which can both be stale at this point.
+      const { nodeLookup } = rfStore.getState();
+      const dims = (n: Node) => ({
+        width: n.measured?.width ?? n.width ?? ((n.style?.width as number) || 300),
+        height: n.measured?.height ?? n.height ?? ((n.style?.height as number) || 250),
+      });
+      const absPos = (n: Node) =>
+        nodeLookup.get(n.id)?.internals.positionAbsolute ?? n.position;
+
+      const nodeAbsPos = absPos(node);
+      const nodeDims = dims(node);
+      const nodeArea = nodeDims.width * nodeDims.height;
+      const nodeCenter = {
+        x: nodeAbsPos.x + nodeDims.width / 2,
+        y: nodeAbsPos.y + nodeDims.height / 2,
+      };
+
+      // Candidate parents: intersecting groups that are larger than the dragged
+      // node (a region dragged across a small VPC must not nest into it).
+      const intersectingGroups = getIntersectingNodes(node).filter(n => {
+        if (n.type !== 'group' || isInDraggedSubtree(n.id)) return false;
+        const d = dims(n);
+        return d.width * d.height > nodeArea;
+      });
+
       if (intersectingGroups.length > 0) {
-        // Parent to the first intersecting group
-        const targetGroup = intersectingGroups[0];
-        
+        // Parent to the innermost (smallest) candidate, preferring groups that
+        // contain the dragged node's center — that's the one visually under it.
+        const containsCenter = (n: Node) => {
+          const p = absPos(n);
+          const d = dims(n);
+          return (
+            nodeCenter.x >= p.x && nodeCenter.x <= p.x + d.width &&
+            nodeCenter.y >= p.y && nodeCenter.y <= p.y + d.height
+          );
+        };
+        const pickSmallest = (candidates: Node[]) =>
+          candidates.reduce((best, c) => {
+            const da = dims(c);
+            const db = dims(best);
+            return da.width * da.height < db.width * db.height ? c : best;
+          });
+        const containing = intersectingGroups.filter(containsCenter);
+        const targetGroup = pickSmallest(containing.length > 0 ? containing : intersectingGroups);
+
         // Only update if not already parented to this group
         if (node.parentId !== targetGroup.id) {
-          // Use React Flow's internal nodeLookup to get authoritative positionAbsolute
-          // values for both nodes. This is more reliable than node.position from the
-          // callback or the Zustand store, which can both be stale at this point.
-          const { nodeLookup } = rfStore.getState();
-          const internalNode = nodeLookup.get(node.id);
-          const internalGroup = nodeLookup.get(targetGroup.id);
-          const nodeAbsPos = internalNode?.internals.positionAbsolute ?? node.position;
-          const groupAbsPos = internalGroup?.internals.positionAbsolute ?? targetGroup.position;
+          const groupAbsPos = absPos(targetGroup);
           const relativePosition = {
             x: nodeAbsPos.x - groupAbsPos.x,
             y: nodeAbsPos.y - groupAbsPos.y,
