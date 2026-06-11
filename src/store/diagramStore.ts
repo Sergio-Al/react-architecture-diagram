@@ -620,52 +620,22 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
     debouncedSave(get().saveDiagram);
   },
 
-  // Toggle group collapse
+  // Toggle group collapse. Only flips the flag — child/edge visibility and
+  // boundary-edge roll-up are DERIVED at render time (utils/groupRollup.ts),
+  // so nodes added or edges drawn while collapsed stay consistent.
   toggleGroupCollapse: (id) => {
     const { nodes } = get();
     const groupNode = nodes.find(n => n.id === id);
     if (!groupNode) return;
 
     const isCollapsing = !(groupNode.data as GroupNodeData).collapsed;
-    
-    // Find all children (nodes with this group as parent)
-    const childNodeIds = nodes
-      .filter(n => n.parentId === id)
-      .map(n => n.id);
 
     set((state) => ({
-      nodes: state.nodes.map((node) => {
-        // Toggle the group itself
-        if (node.id === id) {
-          return { ...node, data: { ...node.data, collapsed: isCollapsing } };
-        }
-        // Hide/show child nodes
-        if (childNodeIds.includes(node.id)) {
-          return { ...node, hidden: isCollapsing };
-        }
-        return node;
-      }),
-      edges: state.edges.map((edge) => {
-        // Hide edges between hidden nodes or edges to/from hidden nodes
-        const sourceHidden = childNodeIds.includes(edge.source);
-        const targetHidden = childNodeIds.includes(edge.target);
-        
-        if (sourceHidden && targetHidden) {
-          // Both nodes hidden - hide the edge
-          return { ...edge, hidden: isCollapsing };
-        } else if (sourceHidden || targetHidden) {
-          // One end hidden - connect to group instead
-          if (isCollapsing) {
-            return {
-              ...edge,
-              hidden: true, // Hide internal edges when collapsed
-            };
-          } else {
-            return { ...edge, hidden: false };
-          }
-        }
-        return edge;
-      }),
+      nodes: state.nodes.map((node) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, collapsed: isCollapsing } }
+          : node
+      ),
     }));
     get().saveToHistory();
     debouncedSave(get().saveDiagram);
@@ -717,15 +687,31 @@ export const useDiagramStore = create<DiagramStore>((set, get) => ({
         extent: 'parent' as const,
       };
 
-      // IMPORTANT: React Flow requires parent nodes to come BEFORE child nodes in the array
-      const nodesWithoutTarget = state.nodes.filter(n => n.id !== nodeId);
-      const parentIndex = nodesWithoutTarget.findIndex(n => n.id === groupId);
-      
-      // Insert the child node right after its parent
+      // IMPORTANT: React Flow requires parent nodes to come BEFORE child nodes
+      // in the array. When the moved node is itself a group, its whole subtree
+      // must move with it so its own children stay after it.
+      const subtreeIds = new Set<string>([nodeId]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const n of state.nodes) {
+          if (n.parentId && subtreeIds.has(n.parentId) && !subtreeIds.has(n.id)) {
+            subtreeIds.add(n.id);
+            grew = true;
+          }
+        }
+      }
+      const descendants = state.nodes.filter(n => n.id !== nodeId && subtreeIds.has(n.id));
+      const nodesWithoutSubtree = state.nodes.filter(n => !subtreeIds.has(n.id));
+      const parentIndex = nodesWithoutSubtree.findIndex(n => n.id === groupId);
+
+      // Insert the subtree right after its new parent (descendants keep their
+      // original relative order, which is already parent-before-child).
       const reorderedNodes = [
-        ...nodesWithoutTarget.slice(0, parentIndex + 1),
+        ...nodesWithoutSubtree.slice(0, parentIndex + 1),
         updatedNode,
-        ...nodesWithoutTarget.slice(parentIndex + 1),
+        ...descendants,
+        ...nodesWithoutSubtree.slice(parentIndex + 1),
       ];
 
       return { nodes: reorderedNodes };

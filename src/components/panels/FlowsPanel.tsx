@@ -32,6 +32,16 @@ export function FlowsPanel({ onClose }: FlowsPanelProps) {
   const sourceNodeId = useSimulationStore((s) => s.sourceNodeId);
   const simIsRunning = useSimulationStore((s) => s.isRunning);
   const stopSim = useSimulationStore((s) => s.stop);
+  const setSimMode = useSimulationStore((s) => s.setMode);
+
+  const handleClose = () => {
+    // Stop any active flow simulation so the diagram doesn't stay highlighted
+    if (simMode !== 'idle') {
+      stopSim();
+      setSimMode('idle');
+    }
+    onClose();
+  };
 
   // 'new' = create with the current sim source; or { id } for edit.
   const [dialog, setDialog] = useState<{ kind: 'new' } | { kind: 'edit'; id: string } | null>(null);
@@ -70,7 +80,7 @@ export function FlowsPanel({ onClose }: FlowsPanelProps) {
             <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-600">{flows.length}</span>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors"
             title="Close"
           >

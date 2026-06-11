@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useDiagramStore } from '@/store/diagramStore';
+import { applyGroupCollapse } from '@/utils/groupRollup';
 import { Node, Edge } from '@xyflow/react';
 
 // Reset store before each test
@@ -566,7 +567,7 @@ describe('diagramStore', () => {
         expect(updatedGroup?.data.collapsed).toBe(true);
       });
 
-      it('should hide child nodes when collapsing', () => {
+      it('should hide child nodes in the derived display graph when collapsing', () => {
         const group = createGroupNode('group-1');
         const child = createChildNode('node-1', 'group-1');
 
@@ -574,11 +575,11 @@ describe('diagramStore', () => {
         useDiagramStore.getState().toggleGroupCollapse('group-1');
 
         const state = useDiagramStore.getState();
-        const updatedChild = state.nodes.find(n => n.id === 'node-1');
-        expect(updatedChild?.hidden).toBe(true);
+        const { displayNodes } = applyGroupCollapse(state.nodes, state.edges);
+        expect(displayNodes.find(n => n.id === 'node-1')?.hidden).toBe(true);
       });
 
-      it('should show child nodes when expanding', () => {
+      it('should show child nodes in the derived display graph when expanding', () => {
         const group = { ...createGroupNode('group-1'), data: { ...createGroupNode('group-1').data, collapsed: true } };
         const child = { ...createChildNode('node-1', 'group-1'), hidden: true };
 
@@ -586,8 +587,8 @@ describe('diagramStore', () => {
         useDiagramStore.getState().toggleGroupCollapse('group-1');
 
         const state = useDiagramStore.getState();
-        const updatedChild = state.nodes.find(n => n.id === 'node-1');
-        expect(updatedChild?.hidden).toBe(false);
+        const { displayNodes } = applyGroupCollapse(state.nodes, state.edges);
+        expect(displayNodes.find(n => n.id === 'node-1')?.hidden).toBe(false);
       });
     });
 
@@ -608,6 +609,31 @@ describe('diagramStore', () => {
         const updatedNode = state.nodes.find(n => n.id === 'node-1');
         expect(updatedNode?.parentId).toBe('group-1');
         expect(updatedNode?.data.parentId).toBe('group-1');
+      });
+
+      it('should nest a group into another group, moving its whole subtree after the new parent', () => {
+        const inner = { ...createGroupNode('group-inner'), position: { x: 500, y: 500 } };
+        const innerChild = createChildNode('node-1', 'group-inner');
+        const outer = { ...createGroupNode('group-outer'), style: { width: 900, height: 700 } };
+
+        // inner + its child come BEFORE outer in the array on purpose
+        useDiagramStore.setState({ nodes: [inner, innerChild, outer], edges: [] });
+        useDiagramStore.getState().addNodeToGroup('group-inner', 'group-outer', { x: 100, y: 100 });
+
+        const state = useDiagramStore.getState();
+        const updatedInner = state.nodes.find(n => n.id === 'group-inner');
+        expect(updatedInner?.parentId).toBe('group-outer');
+        expect(updatedInner?.extent).toBe('parent');
+
+        // React Flow requires parents before children: outer < inner < inner's child
+        const order = state.nodes.map(n => n.id);
+        expect(order.indexOf('group-outer')).toBeLessThan(order.indexOf('group-inner'));
+        expect(order.indexOf('group-inner')).toBeLessThan(order.indexOf('node-1'));
+
+        // The grandchild must keep its parent (and its relative position is untouched)
+        const grandchild = state.nodes.find(n => n.id === 'node-1');
+        expect(grandchild?.parentId).toBe('group-inner');
+        expect(grandchild?.position).toEqual({ x: 50, y: 50 });
       });
     });
 
